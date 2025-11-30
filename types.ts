@@ -1,3 +1,4 @@
+
 export enum Priority {
   High = 'High',
   Medium = 'Medium',
@@ -44,9 +45,17 @@ export interface UserProfile {
   wakeUpTime: string;
   sleepTime: string;
   productiveHours: string; // e.g. "morning", "night"
+  aura: number; // XP System
 }
 
 export interface AnalysisData {
   name: string;
   value: number;
+}
+
+export interface ToastMessage {
+  id: string;
+  message: string;
+  type: 'success' | 'error' | 'info';
+  onUndo?: () => void;
 }

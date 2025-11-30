@@ -5,26 +5,93 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Statusbar</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
       body {
-        font-family: 'Inter', sans-serif;
-        background-color: #0f172a; /* Slate 900 */
-        color: #f8fafc; /* Slate 50 */
+        font-family: 'Space Grotesk', sans-serif;
+        background-color: #050505;
+        color: #f4f4f5;
+        overflow-x: hidden;
       }
-      /* Custom Scrollbar */
+
+      /* Retro Grid Background */
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-image: 
+          linear-gradient(rgba(139, 92, 246, 0.1) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(139, 92, 246, 0.1) 1px, transparent 1px);
+        background-size: 40px 40px;
+        z-index: -1;
+        pointer-events: none;
+        mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+      }
+
+      /* Custom Scrollbar - Neon */
       ::-webkit-scrollbar {
         width: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #1e293b; 
+        background: #09090b; 
       }
       ::-webkit-scrollbar-thumb {
-        background: #475569; 
+        background: #27272a; 
         border-radius: 4px;
+        border: 1px solid #3f3f46;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #64748b; 
+        background: #8b5cf6; /* Violet hover */
+      }
+      
+      /* Animations */
+      .animate-float {
+        animation: float 6s ease-in-out infinite;
+      }
+      @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+      }
+
+      .animate-bounce-short {
+        animation: bounceShort 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      @keyframes bounceShort {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+      }
+
+      .animate-pulse-glow {
+        animation: pulseGlow 2s infinite;
+      }
+      @keyframes pulseGlow {
+        0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+      }
+
+      /* Checkbox Pop Animation */
+      @keyframes pop {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.4) rotate(10deg); }
+        100% { transform: scale(1); }
+      }
+      .checkbox-pop:checked {
+        animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      .font-mono {
+        font-family: 'JetBrains Mono', monospace;
+      }
+      
+      .glass-panel {
+        background: rgba(24, 24, 27, 0.6);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
       }
     </style>
   <script type="importmap">

@@ -23,6 +23,21 @@ const scheduleSchema: Schema = {
   }
 };
 
+const subTaskSchema: Schema = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Actionable sub-task title" },
+      durationMinutes: { type: Type.NUMBER, description: "Estimated duration in minutes" },
+      category: { type: Type.STRING, description: "Category of the task" },
+      priority: { type: Type.STRING, description: "Priority level (High, Medium, Low)" },
+      energyRequired: { type: Type.STRING, description: "Energy level (High, Medium, Low)" }
+    },
+    required: ["title", "durationMinutes", "category", "priority", "energyRequired"]
+  }
+};
+
 export const generateSmartSchedule = async (
   tasks: Task[], 
   profile: UserProfile, 
@@ -80,6 +95,38 @@ export const generateSmartSchedule = async (
     console.error("Error generating schedule:", error);
     // Fallback or rethrow
     throw new Error("Failed to generate schedule");
+  }
+};
+
+export const breakDownComplexTask = async (taskDescription: string): Promise<any[]> => {
+  const prompt = `
+    The user has a complex task: "${taskDescription}".
+    Break this down into 3-6 smaller, actionable sub-tasks.
+    
+    For each sub-task, estimate:
+    - Duration (minutes)
+    - Priority (High/Medium/Low)
+    - Energy Required (High/Medium/Low)
+    - Category (Work, Study, Health, Personal, Break)
+    
+    Keep the titles concise and actionable. Use a bit of Gen Z flair if appropriate but keep it clear.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: subTaskSchema,
+        temperature: 0.4,
+      }
+    });
+
+    return JSON.parse(response.text || "[]");
+  } catch (error) {
+    console.error("Error breaking down task:", error);
+    throw new Error("Failed to break down task");
   }
 };
 
