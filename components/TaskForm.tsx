@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, ArrowRight, Wand2, BatteryLow, BatteryMedium, BatteryCharging, Signal, SignalMedium, SignalHigh, Save, X, Layers, Disc } from 'lucide-react';
+import { Plus, ArrowRight, Wand2, BatteryLow, BatteryMedium, Zap, Signal, SignalMedium, SignalHigh, Save, X, Layers, Disc } from 'lucide-react';
 import { Task, Priority, EnergyLevel, TaskCategory } from '../types';
 import { Button } from './Button';
 import { breakDownComplexTask } from '../services/geminiService';
@@ -114,7 +114,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask }) => {
 
   return (
     <>
-      <div className="bg-surface/40 backdrop-blur-md p-6 rounded-2xl border border-border space-y-6 transition-all hover:border-border/80 relative overflow-hidden">
+      <div className="bg-surface/40 backdrop-blur-md p-4 sm:p-6 rounded-2xl border border-border space-y-6 transition-all hover:border-border/80 relative overflow-hidden">
         
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-muted uppercase tracking-widest font-mono flex items-center gap-2">
@@ -135,23 +135,28 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask }) => {
 
         {/* Macros Bar */}
         {templates.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-            {templates.map(temp => (
-              <div 
-                key={temp.id}
-                onClick={() => handleLoadMacro(temp)}
-                className="flex-shrink-0 group relative flex items-center gap-2 px-3 py-1.5 bg-black/40 border border-border hover:border-primary/50 rounded-lg cursor-pointer transition-all hover:bg-surface-highlight"
-              >
-                <Disc className="w-3 h-3 text-muted group-hover:text-primary" />
-                <span className="text-xs font-mono text-muted group-hover:text-foreground truncate max-w-[100px]">{temp.title}</span>
-                <button 
-                  onClick={(e) => handleDeleteMacro(e, temp.id)}
-                  className="ml-1 text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+          <div className="space-y-2">
+            <div className="flex items-center gap-1 text-[10px] font-bold text-muted uppercase tracking-widest font-mono pl-1">
+              <Layers className="w-3 h-3" /> Saved Macros
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+              {templates.map(temp => (
+                <div 
+                  key={temp.id}
+                  onClick={() => handleLoadMacro(temp)}
+                  className="flex-shrink-0 group relative flex items-center gap-2 px-3 py-1.5 bg-black/40 border border-border hover:border-primary/50 rounded-lg cursor-pointer transition-all hover:bg-surface-highlight"
                 >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
+                  <Disc className="w-3 h-3 text-muted group-hover:text-primary" />
+                  <span className="text-xs font-mono text-muted group-hover:text-foreground truncate max-w-[100px]">{temp.title}</span>
+                  <button 
+                    onClick={(e) => handleDeleteMacro(e, temp.id)}
+                    className="ml-1 text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
         
@@ -183,7 +188,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted uppercase tracking-wider font-mono">Duration</label>
               <div className="flex items-center gap-2">
@@ -191,9 +196,9 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask }) => {
                   type="number"
                   value={duration}
                   onChange={(e) => setDuration(parseInt(e.target.value))}
-                  className="w-20 bg-surface-highlight border-none rounded-lg px-3 py-2 text-foreground focus:ring-1 focus:ring-primary outline-none text-sm font-mono"
+                  className="w-full bg-surface-highlight border-none rounded-lg px-3 py-2 text-foreground focus:ring-1 focus:ring-primary outline-none text-sm font-mono"
                 />
-                <span className="text-sm text-muted font-mono">min</span>
+                <span className="text-sm text-muted font-mono whitespace-nowrap">min</span>
               </div>
             </div>
             <div className="space-y-1">
@@ -208,16 +213,16 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted uppercase tracking-wider font-mono">Priority</label>
               <div className="grid grid-cols-3 gap-2">
                  {(Object.values(Priority) as Priority[]).map((p) => {
-                   let icon = <Signal className="w-3 h-3" />;
+                   let icon = <Signal className="w-4 h-4" />;
                    let color = "text-muted";
-                   if (p === Priority.Low) { icon = <Signal className="w-3 h-3 text-emerald-400" />; color="text-emerald-400"; }
-                   if (p === Priority.Medium) { icon = <SignalMedium className="w-3 h-3 text-blue-400" />; color="text-blue-400"; }
-                   if (p === Priority.High) { icon = <SignalHigh className="w-3 h-3 text-red-400" />; color="text-red-400"; }
+                   if (p === Priority.Low) { icon = <Signal className="w-4 h-4" />; color="text-emerald-400"; }
+                   if (p === Priority.Medium) { icon = <SignalMedium className="w-4 h-4" />; color="text-blue-400"; }
+                   if (p === Priority.High) { icon = <SignalHigh className="w-4 h-4" />; color="text-red-400"; }
                    
                    return (
                      <button
@@ -225,15 +230,15 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask }) => {
                        type="button"
                        onClick={() => setPriority(p)}
                        className={`
-                          flex flex-col items-center justify-center p-2 rounded-lg border transition-all duration-200
+                          flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200
                           ${priority === p 
-                            ? `bg-surface-highlight border-${color.split('-')[1]}-500/50 shadow-[0_0_10px_rgba(0,0,0,0.2)]` 
+                            ? `bg-surface-highlight border-${color.split('-')[1]}-500 shadow-[0_0_10px_rgba(0,0,0,0.2)]` 
                             : 'bg-surface/20 border-transparent hover:bg-surface-highlight/50 opacity-60 hover:opacity-100'
                           }
                        `}
                      >
-                       <div className="mb-1">{icon}</div>
-                       <span className={`text-[9px] font-bold uppercase ${priority === p ? 'text-foreground' : 'text-muted'}`}>
+                       <div className={`${priority === p ? color : 'text-muted'} mb-1`}>{icon}</div>
+                       <span className={`text-[10px] font-bold uppercase ${priority === p ? 'text-foreground' : 'text-muted'}`}>
                          {p}
                        </span>
                      </button>
@@ -250,23 +255,29 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask }) => {
                    let colorClass = '';
                    let label = '';
                    let desc = '';
+                   let activeClass = '';
 
                    if (level === EnergyLevel.Low) {
-                      icon = <BatteryLow className="w-4 h-4" />;
+                      icon = <BatteryLow className="w-5 h-5" />;
                       colorClass = 'text-emerald-400';
+                      activeClass = 'bg-emerald-500/20 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]';
                       label = 'Low';
                       desc = 'Chill';
                    } else if (level === EnergyLevel.Medium) {
-                      icon = <BatteryMedium className="w-4 h-4" />;
+                      icon = <BatteryMedium className="w-5 h-5" />;
                       colorClass = 'text-amber-400';
+                      activeClass = 'bg-amber-500/20 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]';
                       label = 'Med';
-                      desc = 'Standard';
+                      desc = 'Std';
                    } else {
-                      icon = <BatteryCharging className="w-4 h-4" />;
+                      icon = <Zap className="w-5 h-5" />;
                       colorClass = 'text-rose-400';
+                      activeClass = 'bg-rose-500/20 border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]';
                       label = 'High';
                       desc = 'Grind';
                    }
+
+                   const isSelected = energy === level;
 
                    return (
                      <button
@@ -274,20 +285,29 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask }) => {
                        type="button"
                        onClick={() => setEnergy(level)}
                        className={`
-                          flex flex-col items-center justify-center p-2 rounded-lg border transition-all duration-200
-                          ${energy === level 
-                            ? `bg-surface-highlight border-${colorClass.split('-')[1]}-500/50 shadow-[0_0_10px_rgba(0,0,0,0.2)]` 
-                            : 'bg-surface/20 border-transparent hover:bg-surface-highlight/50 opacity-60 hover:opacity-100'
+                          group flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-300 relative overflow-hidden
+                          ${isSelected 
+                            ? activeClass 
+                            : 'bg-surface/30 border-transparent hover:bg-surface-highlight hover:border-border/50 opacity-70 hover:opacity-100'
                           }
                        `}
                      >
-                       <div className={`${energy === level ? colorClass : 'text-muted'} transition-colors mb-0.5`}>
+                       <div className={`${isSelected ? colorClass : 'text-muted group-hover:text-foreground'} transition-colors mb-1.5`}>
                            {icon}
                        </div>
-                       <span className={`text-[9px] font-bold uppercase font-mono ${energy === level ? 'text-foreground' : 'text-muted'}`}>
-                           {label}
-                       </span>
-                       <span className="text-[7px] text-muted/60 font-mono tracking-tighter uppercase">{desc}</span>
+                       <div className="text-center z-10">
+                           <div className={`text-[10px] font-bold uppercase font-mono leading-none mb-1 ${isSelected ? 'text-foreground' : 'text-muted'}`}>
+                               {label}
+                           </div>
+                           <div className="text-[8px] text-muted/60 font-mono tracking-wider uppercase">
+                               {desc}
+                           </div>
+                       </div>
+                       
+                       {/* Background highlight for selected */}
+                       {isSelected && (
+                           <div className={`absolute inset-0 opacity-20 ${colorClass.replace('text-', 'bg-')}`}></div>
+                       )}
                      </button>
                    );
                  })}

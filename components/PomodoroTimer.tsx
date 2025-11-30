@@ -20,9 +20,6 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ settings, onUpdate
   const [showSettings, setShowSettings] = useState(false);
   const [cycleCount, setCycleCount] = useState(0);
 
-  // Sound ref (using a simple beep frequency approach if we implemented real audio, 
-  // but for now we'll rely on visual cues as per standard web restrictions without user interaction)
-
   useEffect(() => {
     // Reset timer when settings change or mode changes
     const getDuration = () => {
@@ -66,8 +63,6 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ settings, onUpdate
       setMode('work');
       if (settings.autoStartPomodoros) setIsActive(true);
     }
-    
-    // Play notification sound or show toast (handled by parent ideally, but we'll do a visual flash here)
   };
 
   const toggleTimer = () => setIsActive(!isActive);
@@ -97,7 +92,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ settings, onUpdate
   if (isMinimized) {
     return (
       <div 
-        className="fixed bottom-6 left-6 z-40 bg-zinc-900 border border-zinc-800 rounded-lg shadow-[0_0_20px_rgba(0,0,0,0.5)] p-2 flex items-center gap-3 cursor-pointer hover:border-violet-500 transition-colors animate-in slide-in-from-bottom-10"
+        className="fixed bottom-20 right-4 lg:bottom-6 lg:left-6 lg:right-auto z-40 bg-zinc-900 border border-zinc-800 rounded-lg shadow-[0_0_20px_rgba(0,0,0,0.5)] p-2 flex items-center gap-3 cursor-pointer hover:border-violet-500 transition-colors animate-in slide-in-from-bottom-10"
         onClick={() => setIsMinimized(false)}
       >
         <div className={`w-2 h-2 rounded-full animate-pulse ${isActive ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
@@ -108,7 +103,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ settings, onUpdate
   }
 
   return (
-    <div className="fixed bottom-6 left-6 z-40 w-80 bg-zinc-950/90 backdrop-blur-xl border border-zinc-800 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-hidden animate-in slide-in-from-bottom-10 duration-300">
+    <div className="fixed bottom-0 left-0 right-0 lg:bottom-6 lg:left-6 lg:right-auto z-40 w-full lg:w-80 bg-zinc-950/95 lg:bg-zinc-950/90 backdrop-blur-xl border-t lg:border border-zinc-800 rounded-t-2xl lg:rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-hidden animate-in slide-in-from-bottom-10 duration-300 pb-safe">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/50">
         <div className="flex items-center gap-2">

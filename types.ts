@@ -50,7 +50,7 @@ export interface PomodoroSettings {
   autoStartPomodoros: boolean;
 }
 
-export type Theme = 'cyber' | 'y2k' | 'brat' | 'cozy' | 'drift';
+export type Theme = 'cyber' | 'y2k' | 'brat' | 'cozy' | 'drift' | 'vapor' | 'acid' | 'goth' | 'cloud' | 'retro' | 'glitch' | 'luxe' | 'void' | 'sunset' | 'mint';
 
 export interface UserProfile {
   name: string;
@@ -60,6 +60,8 @@ export interface UserProfile {
   aura: number; // XP System
   pomodoroSettings?: PomodoroSettings;
   theme: Theme;
+  streak: number;
+  lastLoginDate: string; // YYYY-MM-DD
 }
 
 export interface AnalysisData {
@@ -72,4 +74,16 @@ export interface ToastMessage {
   message: string;
   type: 'success' | 'error' | 'info';
   onUndo?: () => void;
+}
+
+export type WidgetType = 'dailyVibe' | 'moodTracker' | 'taskForm' | 'brainDump' | 'questLog' | 'timeline' | 'aura' | 'focusTimer';
+
+export interface DashboardWidget {
+  id: string;
+  type: WidgetType;
+}
+
+export interface DashboardLayout {
+  leftCol: DashboardWidget[];
+  rightCol: DashboardWidget[];
 }

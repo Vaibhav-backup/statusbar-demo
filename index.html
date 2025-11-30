@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Statusbar</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&family=VT323&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         darkMode: 'class',
@@ -25,6 +25,7 @@
             fontFamily: {
               sans: ['var(--font-heading)', 'sans-serif'],
               mono: ['var(--font-body)', 'monospace'],
+              receipt: ['"VT323"', 'monospace'],
             }
           }
         }
@@ -110,6 +111,166 @@
         --font-body: 'JetBrains Mono';
         --grid-color: rgba(244, 63, 94, 0.15);
       }
+      
+      /* VAPOR (Vaporwave) */
+      .theme-vapor {
+        --bg-primary: #2e003e; /* Deep Purple */
+        --bg-secondary: #3b0764;
+        --bg-highlight: #581c87;
+        --border-color: #7e22ce;
+        --primary: #00f0ff; /* Cyan */
+        --primary-fg: #000000;
+        --secondary: #ff00ff; /* Magenta */
+        --text-primary: #e9d5ff;
+        --text-secondary: #a855f7;
+        --font-heading: 'Space Grotesk';
+        --font-body: 'JetBrains Mono';
+        --grid-color: rgba(0, 240, 255, 0.15);
+      }
+
+      /* ACID (Acid Pixie) */
+      .theme-acid {
+        --bg-primary: #000000;
+        --bg-secondary: #111;
+        --bg-highlight: #222;
+        --border-color: #333;
+        --primary: #ccff00; /* Acid Green */
+        --primary-fg: #000000;
+        --secondary: #ff00cc; /* Hot Pink */
+        --text-primary: #ffffff;
+        --text-secondary: #666666;
+        --font-heading: 'Inter';
+        --font-body: 'JetBrains Mono';
+        --grid-color: rgba(204, 255, 0, 0.2);
+      }
+      
+      /* GOTH (Whimsigoth) */
+      .theme-goth {
+        --bg-primary: #1a0b1a; /* Very dark purple/black */
+        --bg-secondary: #2e1065;
+        --bg-highlight: #4c1d95;
+        --border-color: #5b21b6;
+        --primary: #9d4edd; /* Deep Violet */
+        --primary-fg: #ffffff;
+        --secondary: #e0aaff;
+        --text-primary: #fae8ff;
+        --text-secondary: #a78bfa;
+        --font-heading: 'Space Grotesk';
+        --font-body: 'Space Grotesk';
+        --grid-color: rgba(157, 78, 221, 0.1);
+      }
+
+      /* CLOUD (Dreamy) */
+      .theme-cloud {
+        --bg-primary: #1e1b4b; /* Indigo 950 */
+        --bg-secondary: #312e81;
+        --bg-highlight: #3730a3;
+        --border-color: #4338ca;
+        --primary: #c084fc; /* Purple 400 */
+        --primary-fg: #ffffff;
+        --secondary: #818cf8; /* Indigo 400 */
+        --text-primary: #e0e7ff;
+        --text-secondary: #a5b4fc;
+        --font-heading: 'Space Grotesk';
+        --font-body: 'Space Grotesk';
+        --grid-color: rgba(192, 132, 252, 0.1);
+      }
+      
+      /* RETRO (90s) */
+      .theme-retro {
+        --bg-primary: #111827;
+        --bg-secondary: #1f2937;
+        --bg-highlight: #374151;
+        --border-color: #4b5563;
+        --primary: #f59e0b; /* Amber */
+        --primary-fg: #000000;
+        --secondary: #ef4444; /* Red */
+        --text-primary: #f3f4f6;
+        --text-secondary: #9ca3af;
+        --font-heading: 'VT323';
+        --font-body: 'VT323';
+        --grid-color: rgba(245, 158, 11, 0.15);
+      }
+
+      /* GLITCH (Glitchcore) */
+      .theme-glitch {
+        --bg-primary: #050505;
+        --bg-secondary: #000000;
+        --bg-highlight: #111;
+        --border-color: #333;
+        --primary: #ff003c; /* Red */
+        --primary-fg: #ffffff;
+        --secondary: #00f0ff; /* Blue */
+        --text-primary: #ffffff;
+        --text-secondary: #555;
+        --font-heading: 'JetBrains Mono';
+        --font-body: 'JetBrains Mono';
+        --grid-color: rgba(255, 0, 60, 0.2);
+      }
+
+      /* LUXE (Old Money) */
+      .theme-luxe {
+        --bg-primary: #0c0a09; /* Stone 950 */
+        --bg-secondary: #1c1917;
+        --bg-highlight: #292524;
+        --border-color: #44403c;
+        --primary: #d4af37; /* Metallic Gold */
+        --primary-fg: #000000;
+        --secondary: #10b981; /* Emerald */
+        --text-primary: #f5f5f4;
+        --text-secondary: #a8a29e;
+        --font-heading: 'Space Grotesk';
+        --font-body: 'Inter';
+        --grid-color: rgba(212, 175, 55, 0.1);
+      }
+      
+      /* VOID (Minimal Dark) */
+      .theme-void {
+        --bg-primary: #000000;
+        --bg-secondary: #000000;
+        --bg-highlight: #111111;
+        --border-color: #333333;
+        --primary: #ffffff; /* White */
+        --primary-fg: #000000;
+        --secondary: #525252;
+        --text-primary: #ffffff;
+        --text-secondary: #666666;
+        --font-heading: 'Inter';
+        --font-body: 'Inter';
+        --grid-color: rgba(255, 255, 255, 0.05);
+      }
+      
+      /* SUNSET (Golden Hour) */
+      .theme-sunset {
+        --bg-primary: #2a0a0a; /* Dark warm brown */
+        --bg-secondary: #451a03;
+        --bg-highlight: #78350f;
+        --border-color: #92400e;
+        --primary: #f97316; /* Orange */
+        --primary-fg: #ffffff;
+        --secondary: #eab308; /* Yellow */
+        --text-primary: #fff7ed;
+        --text-secondary: #fed7aa;
+        --font-heading: 'Space Grotesk';
+        --font-body: 'Space Grotesk';
+        --grid-color: rgba(249, 115, 22, 0.15);
+      }
+      
+      /* MINT (Fresh) */
+      .theme-mint {
+        --bg-primary: #022c22; /* Emerald 950 */
+        --bg-secondary: #064e3b;
+        --bg-highlight: #065f46;
+        --border-color: #059669;
+        --primary: #34d399; /* Emerald 400 */
+        --primary-fg: #022c22;
+        --secondary: #2dd4bf; /* Teal */
+        --text-primary: #ecfdf5;
+        --text-secondary: #6ee7b7;
+        --font-heading: 'Space Grotesk';
+        --font-body: 'Inter';
+        --grid-color: rgba(52, 211, 153, 0.15);
+      }
 
       body {
         font-family: var(--font-heading), sans-serif;
@@ -117,6 +278,16 @@
         color: var(--text-primary);
         overflow-x: hidden;
         transition: background-color 0.5s ease, color 0.5s ease;
+      }
+
+      /* Rot Mode */
+      body.rot-mode {
+        filter: grayscale(0.8) contrast(0.9) brightness(0.8);
+        transition: filter 1s ease;
+      }
+      
+      body.rot-mode .no-rot {
+        filter: grayscale(0) !important;
       }
 
       /* Dynamic Retro Grid Background */
@@ -179,6 +350,12 @@
         backdrop-filter: blur(12px);
         border: 1px solid var(--border-color);
       }
+      
+      .receipt-edge {
+        background-image: radial-gradient(circle at 10px 0, transparent 10px, white 11px);
+        background-size: 20px 10px;
+        background-repeat: repeat-x;
+      }
 
       /* Utility for text shadow based on theme */
       .text-shadow-neon {
@@ -193,7 +370,8 @@
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
-    "recharts": "https://aistudiocdn.com/recharts@^3.5.0"
+    "recharts": "https://aistudiocdn.com/recharts@^3.5.0",
+    "html2canvas": "https://aistudiocdn.com/html2canvas@^1.4.1"
   }
 }
 </script>

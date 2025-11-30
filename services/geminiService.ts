@@ -38,6 +38,23 @@ const subTaskSchema: Schema = {
   }
 };
 
+const yapSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    summary: { type: Type.STRING, description: "A short, gen-z slang summary of the text" },
+    tasks: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          title: { type: Type.STRING, description: "Actionable task title" },
+          priority: { type: Type.STRING, description: "High/Medium/Low" }
+        }
+      }
+    }
+  }
+};
+
 export const generateSmartSchedule = async (
   tasks: Task[], 
   profile: UserProfile, 
@@ -199,5 +216,54 @@ export const generateScheduleInfographic = async (schedule: ScheduleItem[]): Pro
   } catch (error) {
     console.error("Error generating infographic:", error);
     throw error;
+  }
+};
+
+export const roastSchedule = async (schedule: ScheduleItem[]): Promise<string> => {
+  if (schedule.length === 0) return "You have no schedule. That's the biggest L of all. Do something.";
+  
+  const prompt = `
+    Look at this schedule and ROAST the user. Be savage, funny, and use Gen Z slang.
+    Call them out for bad habits (too many breaks, unrealistic work blocks, weird task combos).
+    Tell them if they are "cooked" or "delusional".
+    
+    Schedule:
+    ${JSON.stringify(schedule)}
+    
+    Keep it under 3 sentences. Make it hurt (but funny).
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: prompt,
+    });
+    return response.text || "Your schedule is so mid I can't even roast it.";
+  } catch (e) {
+    return "Error generating roast. You got lucky.";
+  }
+};
+
+export const summarizeYap = async (text: string): Promise<{summary: string, tasks: {title: string, priority: string}[]}> => {
+  const prompt = `
+    Read this "Yap session" (brain dump/journal entry).
+    1. Summarize the vibe in 1 sentence using slang.
+    2. Extract actionable tasks if there are any hidden in the text.
+    
+    Text: "${text}"
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: yapSchema
+      }
+    });
+    return JSON.parse(response.text || '{"summary": "Just yapping.", "tasks": []}');
+  } catch (e) {
+    return { summary: "Couldn't read the yap.", tasks: [] };
   }
 };

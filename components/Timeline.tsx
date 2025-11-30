@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { ScheduleItem, TaskCategory } from '../types';
-import { Clock, Coffee, Briefcase, BookOpen, Heart, User, Pencil, Trash2, Check, GripVertical, Zap, Play, ArrowUp, ArrowDown } from 'lucide-react';
+import { Clock, Coffee, Briefcase, BookOpen, Heart, User, Pencil, Trash2, Check, GripVertical, Zap, Play, ArrowDown } from 'lucide-react';
 
 interface TimelineProps {
   schedule: ScheduleItem[];
@@ -80,7 +80,7 @@ export const Timeline: React.FC<TimelineProps> = ({ schedule, isLoading, onEdit,
 
   if (schedule.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-border rounded-xl bg-surface/20 group hover:border-primary/50 transition-colors">
+      <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-border rounded-xl bg-surface/20 group hover:border-primary/50 transition-colors m-4">
         <div className="w-16 h-16 rounded-full bg-surface flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <Clock className="w-8 h-8 text-muted group-hover:text-primary transition-colors" />
         </div>
@@ -91,9 +91,9 @@ export const Timeline: React.FC<TimelineProps> = ({ schedule, isLoading, onEdit,
   }
 
   return (
-    <div className="relative pl-4 space-y-4">
+    <div className="relative pl-2 md:pl-4 space-y-3 md:space-y-4">
        {/* Neon Line */}
-      <div className="absolute left-[27px] top-4 bottom-4 w-0.5 bg-gradient-to-b from-primary via-secondary to-transparent opacity-30 -z-10"></div>
+      <div className="absolute left-[20px] md:left-[27px] top-4 bottom-4 w-0.5 bg-gradient-to-b from-primary via-secondary to-transparent opacity-30 -z-10"></div>
       
       {schedule.map((item, index) => {
         const isCompleted = !item.isBreak && completedTaskIds.has(item.taskId);
@@ -115,22 +115,22 @@ export const Timeline: React.FC<TimelineProps> = ({ schedule, isLoading, onEdit,
                 onDragEnd={handleDragEnd}
                 style={{ animationDelay: `${index * 100}ms` }}
                 className={`
-                    relative flex items-start gap-6 group transition-all duration-300 animate-in slide-in-from-bottom-4 fade-in fill-mode-backwards
+                    relative flex items-start gap-3 md:gap-6 group transition-all duration-300 animate-in slide-in-from-bottom-4 fade-in fill-mode-backwards
                     ${isDragging ? 'opacity-40 scale-95 grayscale' : 'opacity-100'}
                     ${isOver ? 'scale-105 z-10' : ''}
                 `}
               >
                 {/* Drag Handle */}
                 {onReorder && (
-                   <div className="absolute -left-6 top-8 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-muted hover:text-primary transition-all p-2 hover:scale-125">
+                   <div className="absolute -left-6 top-8 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-muted hover:text-primary transition-all p-2 hover:scale-125 hidden md:block">
                      <GripVertical className="w-4 h-4" />
                    </div>
                 )}
 
                 {/* Time & Node */}
-                <div className="flex flex-col items-center min-w-[3rem] pt-1">
+                <div className="flex flex-col items-center min-w-[2.5rem] md:min-w-[3rem] pt-1">
                   <div className={`
-                    w-7 h-7 rounded-lg border-2 flex items-center justify-center shadow-[0_0_10px_rgba(0,0,0,0.5)] z-10 transition-all duration-300
+                    w-6 h-6 md:w-7 md:h-7 rounded-lg border-2 flex items-center justify-center shadow-[0_0_10px_rgba(0,0,0,0.5)] z-10 transition-all duration-300
                     ${item.isBreak 
                       ? 'bg-surface border-secondary/30' 
                       : isCompleted 
@@ -140,16 +140,16 @@ export const Timeline: React.FC<TimelineProps> = ({ schedule, isLoading, onEdit,
                             : 'bg-background border-border group-hover:border-primary group-hover:shadow-[0_0_15px_rgba(var(--primary),0.4)]'
                     }
                   `}>
-                    {isCompleted ? <Check className="w-4 h-4 text-black font-bold" /> : getIcon(item.category, item.isBreak)}
+                    {isCompleted ? <Check className="w-3.5 h-3.5 text-black font-bold" /> : getIcon(item.category, item.isBreak)}
                   </div>
-                  <div className="mt-2 text-[10px] font-mono text-muted font-bold group-hover:text-primary transition-colors">
+                  <div className="mt-2 text-[9px] md:text-[10px] font-mono text-muted font-bold group-hover:text-primary transition-colors whitespace-nowrap">
                       {item.timeSlot.split('-')[0]}
                   </div>
                 </div>
 
                 {/* Card */}
                 <div className={`
-                    flex-1 rounded-xl p-5 border-l-4 transition-all duration-300 relative overflow-hidden backdrop-blur-md
+                    flex-1 rounded-xl p-4 md:p-5 border-l-4 transition-all duration-300 relative overflow-hidden backdrop-blur-md
                     ${item.isBreak 
                         ? 'bg-secondary/5 border-l-secondary/50 border-t border-r border-b border-border' 
                         : isCompleted
@@ -160,14 +160,14 @@ export const Timeline: React.FC<TimelineProps> = ({ schedule, isLoading, onEdit,
                     }
                 `}>
                   
-                  <div className="flex justify-between items-start mb-2 pr-16">
-                    <h4 className={`text-base font-bold tracking-tight transition-all duration-300 ${
+                  <div className="flex justify-between items-start mb-2 pr-0 md:pr-16 gap-2">
+                    <h4 className={`text-sm md:text-base font-bold tracking-tight transition-all duration-300 line-clamp-2 ${
                       isCompleted ? 'text-emerald-400 line-through decoration-2' : 'text-foreground'
                     }`}>
                       {item.title}
                     </h4>
                     {!item.isBreak && (
-                      <span className={`text-[9px] uppercase tracking-widest font-bold px-2 py-1 rounded bg-black/40 ${
+                      <span className={`text-[8px] md:text-[9px] uppercase tracking-widest font-bold px-1.5 py-0.5 rounded bg-black/40 whitespace-nowrap ${
                         isCompleted ? 'text-emerald-500' : 'text-muted group-hover:text-primary'
                       }`}>
                           {item.category}
@@ -175,17 +175,17 @@ export const Timeline: React.FC<TimelineProps> = ({ schedule, isLoading, onEdit,
                     )}
                   </div>
                   
-                  <p className={`text-sm leading-relaxed transition-colors duration-300 font-medium ${isCompleted ? 'text-emerald-600/70' : 'text-muted'}`}>
+                  <p className={`text-xs md:text-sm leading-relaxed transition-colors duration-300 font-medium ${isCompleted ? 'text-emerald-600/70' : 'text-muted'}`}>
                     {item.description}
                   </p>
                   
-                  {/* Actions */}
+                  {/* Actions - Always visible on mobile if container touched, otherwise hover on desktop */}
                   {!item.isBreak && (
-                    <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0 bg-black/50 p-1 rounded-lg border border-white/5 backdrop-blur-md">
+                    <div className="flex gap-1 mt-3 md:mt-0 md:absolute md:top-3 md:right-3 md:opacity-0 group-hover:opacity-100 transition-all md:transform md:translate-x-4 md:group-hover:translate-x-0 md:bg-black/50 md:p-1 md:rounded-lg md:border md:border-white/5 md:backdrop-blur-md">
                       {onFocus && !isCompleted && (
                         <button 
                           onClick={() => onFocus(item)}
-                          className="p-1.5 text-muted hover:text-emerald-400 hover:bg-emerald-500/10 rounded-md transition-colors"
+                          className="p-1.5 text-muted hover:text-emerald-400 hover:bg-emerald-500/10 rounded-md transition-colors bg-surface border border-border md:bg-transparent md:border-none"
                           title="Focus Mode"
                         >
                           <Play className="w-3.5 h-3.5 fill-current" />
@@ -194,7 +194,7 @@ export const Timeline: React.FC<TimelineProps> = ({ schedule, isLoading, onEdit,
                       {onEdit && (
                         <button 
                           onClick={() => onEdit(item.taskId)}
-                          className="p-1.5 text-muted hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
+                          className="p-1.5 text-muted hover:text-primary hover:bg-primary/10 rounded-md transition-colors bg-surface border border-border md:bg-transparent md:border-none"
                           title="Edit"
                         >
                           <Pencil className="w-3.5 h-3.5" />
@@ -203,7 +203,7 @@ export const Timeline: React.FC<TimelineProps> = ({ schedule, isLoading, onEdit,
                       {onDelete && (
                         <button 
                           onClick={() => onDelete(item.taskId)}
-                          className="p-1.5 text-muted hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
+                          className="p-1.5 text-muted hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors bg-surface border border-border md:bg-transparent md:border-none"
                           title="Delete"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

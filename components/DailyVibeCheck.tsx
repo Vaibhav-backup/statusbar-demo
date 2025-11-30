@@ -59,7 +59,7 @@ export const DailyVibeCheck: React.FC<DailyVibeCheckProps> = ({ onVibeSelect, cu
   };
 
   return (
-    <div className="bg-surface/40 backdrop-blur-md rounded-2xl border border-border p-5 space-y-4 relative overflow-hidden group">
+    <div className="bg-surface/40 backdrop-blur-md rounded-2xl border border-border p-4 space-y-3 relative overflow-hidden group">
       <div className="flex justify-between items-start relative z-10">
         <div>
            <div className="flex items-center gap-2 mb-1">
@@ -70,7 +70,7 @@ export const DailyVibeCheck: React.FC<DailyVibeCheckProps> = ({ onVibeSelect, cu
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 relative z-10">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 relative z-10">
         {VIBES.map((vibe) => {
            const isSelected = selectedVibe === vibe.id;
            return (
@@ -78,20 +78,20 @@ export const DailyVibeCheck: React.FC<DailyVibeCheckProps> = ({ onVibeSelect, cu
                key={vibe.id}
                onClick={() => handleSelect(vibe)}
                className={`
-                 group relative flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-300
+                 group relative flex flex-col items-center justify-center p-2 rounded-xl border transition-all duration-300
                  ${isSelected 
                     ? `bg-surface-highlight border-${vibe.color.split('-')[1]}-500 shadow-[0_0_15px_rgba(0,0,0,0.3)] scale-[1.02]` 
                     : `bg-black/20 border-transparent ${vibe.borderColor} ${vibe.bgHover} hover:scale-105`
                  }
                `}
              >
-               <vibe.icon className={`w-6 h-6 mb-2 transition-colors ${isSelected ? vibe.color : 'text-muted group-hover:text-foreground'}`} />
-               <span className={`text-xs font-bold uppercase font-mono transition-colors ${isSelected ? 'text-foreground' : 'text-muted group-hover:text-foreground'}`}>
+               <vibe.icon className={`w-5 h-5 mb-1 transition-colors ${isSelected ? vibe.color : 'text-muted group-hover:text-foreground'}`} />
+               <span className={`text-[10px] font-bold uppercase font-mono transition-colors leading-none text-center ${isSelected ? 'text-foreground' : 'text-muted group-hover:text-foreground'}`}>
                  {vibe.label}
                </span>
-               <span className="text-[9px] text-muted/50 font-mono uppercase tracking-wider mt-1 scale-90 opacity-0 group-hover:opacity-100 transition-all">
-                  {vibe.desc}
-               </span>
+               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-black/90 border border-zinc-800 p-2 rounded w-32 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">
+                    <p className="text-[9px] text-zinc-400 font-mono text-center uppercase tracking-wider">{vibe.desc}</p>
+               </div>
                
                {isSelected && (
                  <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Task, ScheduleItem, UserProfile, ToastMessage, PomodoroSettings, Theme } from '../types';
-import { generateSmartSchedule, getMotivationalNudge, generateScheduleInfographic } from '../services/geminiService';
+import { Task, ScheduleItem, UserProfile, ToastMessage, PomodoroSettings, Theme, TaskCategory } from '../types';
+import { generateSmartSchedule, getMotivationalNudge, generateScheduleInfographic, roastSchedule } from '../services/geminiService';
 import { Button } from './Button';
 import { TaskForm } from './TaskForm';
 import { Timeline } from './Timeline';
@@ -12,6 +12,10 @@ import { ToastContainer } from './Toast';
 import { PomodoroTimer } from './PomodoroTimer';
 import { TaskHistory } from './TaskHistory';
 import { DailyVibeCheck } from './DailyVibeCheck';
+import { MoodTracker } from './MoodTracker';
+import { YapPad } from './YapPad';
+import { RoastModal } from './RoastModal';
+import { ReceiptModal } from './ReceiptModal';
 import { 
   LayoutDashboard, 
   Settings, 
@@ -19,7 +23,6 @@ import {
   Zap, 
   CheckCircle2,
   LogOut,
-  Calendar,
   CalendarPlus,
   Image as ImageIcon,
   X,
@@ -27,15 +30,15 @@ import {
   Menu,
   Trash2,
   BrainCircuit,
-  Maximize,
   Pencil,
   Gamepad2,
   Trophy,
   Flame,
   Timer,
   Palette,
-  Archive,
-  History
+  History,
+  Receipt,
+  Skull
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -59,7 +62,9 @@ const DEFAULT_PROFILE: UserProfile = {
   productiveHours: "morning",
   aura: 0,
   pomodoroSettings: DEFAULT_POMODORO,
-  theme: 'cyber'
+  theme: 'cyber',
+  streak: 0,
+  lastLoginDate: new Date().toISOString().split('T')[0]
 };
 
 const THEMES: {id: Theme, label: string, color: string}[] = [
@@ -67,10 +72,19 @@ const THEMES: {id: Theme, label: string, color: string}[] = [
   { id: 'y2k', label: 'Y2K Matrix', color: '#22c55e' },
   { id: 'brat', label: 'Brat Summer', color: '#84cc16' },
   { id: 'cozy', label: 'Lo-Fi Chill', color: '#fdba74' },
-  { id: 'drift', label: 'Night Drift', color: '#f43f5e' }
+  { id: 'drift', label: 'Night Drift', color: '#f43f5e' },
+  { id: 'vapor', label: 'Vaporwave', color: '#00f0ff' },
+  { id: 'acid', label: 'Acid Pixie', color: '#ccff00' },
+  { id: 'goth', label: 'Whimsigoth', color: '#9d4edd' },
+  { id: 'cloud', label: 'Cloud Dream', color: '#c084fc' },
+  { id: 'retro', label: 'Retro 90s', color: '#f59e0b' },
+  { id: 'glitch', label: 'Glitchcore', color: '#ff003c' },
+  { id: 'luxe', label: 'Old Money', color: '#d4af37' },
+  { id: 'void', label: 'Pure Void', color: '#ffffff' },
+  { id: 'sunset', label: 'Golden Hour', color: '#f97316' },
+  { id: 'mint', label: 'Mint Fresh', color: '#34d399' }
 ];
 
-// Simple particle system component
 const ParticleExplosion = ({ x, y }: { x: number, y: number }) => {
     return (
         <div className="fixed pointer-events-none z-50" style={{ left: x, top: y }}>
@@ -105,9 +119,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
     const parsed = saved ? JSON.parse(saved) : { ...DEFAULT_PROFILE, name: user.name };
     if (!parsed.pomodoroSettings) parsed.pomodoroSettings = DEFAULT_POMODORO;
     if (!parsed.theme) parsed.theme = 'cyber';
+    if (parsed.streak === undefined) parsed.streak = 0;
     return parsed;
   });
-  const [brainDump, setBrainDump] = useState(() => localStorage.getItem('statusbar_notes') || '');
+  const [yapText, setYapText] = useState(() => localStorage.getItem('statusbar_yap') || '');
+
+  // Feature States
+  const [rotMode, setRotMode] = useState(false);
+  const [roast, setRoast] = useState<string | null>(null);
+  const [showReceipt, setShowReceipt] = useState(false);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [nudge, setNudge] = useState<string>("SYSTEM ONLINE. READY FOR INPUT.");
@@ -137,7 +157,38 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
       localStorage.setItem('statusbar_profile', JSON.stringify(userProfile)); 
       if (onThemeChange) onThemeChange(userProfile.theme);
   }, [userProfile, onThemeChange]);
-  useEffect(() => { localStorage.setItem('statusbar_notes', brainDump); }, [brainDump]);
+  useEffect(() => { localStorage.setItem('statusbar_yap', yapText); }, [yapText]);
+
+  // Rot Mode Effect
+  useEffect(() => {
+    if (rotMode) {
+      document.body.classList.add('rot-mode');
+    } else {
+      document.body.classList.remove('rot-mode');
+    }
+  }, [rotMode]);
+
+  // Streak Logic
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    if (userProfile.lastLoginDate !== today) {
+        const lastLogin = new Date(userProfile.lastLoginDate);
+        const diff = Math.floor((new Date().getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24));
+        
+        let newStreak = userProfile.streak;
+        if (diff === 1) {
+            newStreak += 1; // Consecutive day
+        } else if (diff > 1) {
+            newStreak = 0; // Streak broken
+        }
+
+        setUserProfile(prev => ({
+            ...prev,
+            lastLoginDate: today,
+            streak: newStreak
+        }));
+    }
+  }, []);
 
   const addToast = (message: string, type: 'success' | 'error' | 'info', onUndo?: () => void) => {
     const id = Date.now().toString();
@@ -161,6 +212,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
     };
     setTasks(prev => [...prev, task]);
     addToast("NEW QUEST ACQUIRED", "info");
+  };
+
+  // New: Handle Tasks from YapPad
+  const handleAddYapTasks = (newTasks: any[]) => {
+      newTasks.forEach(t => {
+          handleAddTask({
+              title: t.title,
+              priority: t.priority,
+              durationMinutes: 30,
+              category: TaskCategory.Work,
+              energyRequired: 'Medium' as any
+          });
+      });
+      addToast(`EXTRACTED ${newTasks.length} TASKS`, "success");
   };
 
   const handleEditTaskClick = (taskId: string) => {
@@ -199,7 +264,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
   };
 
   const handleGenerateSchedule = async () => {
-    // Filter out completed tasks for scheduling
     const activeTasks = tasks.filter(t => !t.completed);
     if (activeTasks.length === 0) {
         addToast("NO ACTIVE QUESTS", "info");
@@ -220,6 +284,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Roast Feature
+  const handleRoast = async () => {
+    setIsGenerating(true);
+    try {
+        const roastText = await roastSchedule(schedule);
+        setRoast(roastText);
+    } catch (e) {
+        addToast("ROAST MACHINE BROKE", "error");
+    } finally {
+        setIsGenerating(false);
+    }
+  };
+
+  // Rot Mode Toggle
+  const toggleRotMode = () => {
+      setRotMode(!rotMode);
+      if (!rotMode) {
+          addToast("ROT PROTOCOL ENGAGED", "info");
+          setNudge("It's okay to do nothing. Go nap.");
+      } else {
+          addToast("SYSTEM REBOOTING...", "success");
+          setNudge("We are so back.");
+      }
   };
 
   const handleReOptimize = async () => {
@@ -246,7 +335,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
   };
 
   const handleToggleTask = (taskId: string, e?: React.MouseEvent) => {
-    // Particle Effect trigger
     if (e) {
         setExplosion({ x: e.clientX, y: e.clientY, id: Date.now() });
         setTimeout(() => setExplosion(null), 1000);
@@ -373,10 +461,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
   const handleVibeSelect = (vibe: string, context: string) => {
      setScheduleContext(context);
      addToast(`VIBE CALIBRATED: ${vibe}`, "success");
-     // If schedule exists, we could prompt to re-roll, but for now just updating context for next action is good.
      if (schedule.length > 0) {
          addToast("HIT REROLL TO APPLY", "info");
      }
+  };
+
+  const handleMoodSelect = (mood: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setScheduleContext(prev => {
+        const cleanPrev = prev.replace(/\[Mood:.*?\]/g, '').trim();
+        return `${cleanPrev} [Mood: ${mood}]`.trim();
+    });
+    addToast(`LOGGED: ${mood}`, "info");
+    if (schedule.length > 0) {
+         addToast("REROLL SUGGESTED", "info");
+    }
   };
 
   return (
@@ -384,8 +483,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
       
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:flex w-80 flex-col border-r border-border bg-surface/80 backdrop-blur-xl sticky top-0 h-screen z-20 shadow-2xl">
-        <div className="p-8 pb-4">
-          <div className="flex items-center gap-3 mb-10 group cursor-default">
+        {/* Header - Fixed */}
+        <div className="p-6">
+          <div className="flex items-center gap-3 group cursor-default">
             <div className="w-10 h-10 bg-primary rounded-lg transform rotate-3 flex items-center justify-center shadow-[0_0_15px_rgba(var(--primary),0.5)] group-hover:rotate-6 transition-transform">
               <Gamepad2 className="text-primary-fg w-6 h-6" />
             </div>
@@ -394,57 +494,68 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
                  <div className="h-0.5 w-full bg-gradient-to-r from-primary to-transparent"></div>
             </div>
           </div>
-
-          <div className="mb-8">
-             <div className="bg-surface-highlight/50 rounded-xl p-4 border border-border relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-muted uppercase tracking-widest font-mono">Current Lvl</span>
-                    <span className="text-primary font-bold font-mono text-xl">{getLevel(userProfile.aura)}</span>
-                </div>
-                {/* Custom XP Bar */}
-                <div className="relative h-4 bg-black rounded-full border border-border overflow-hidden shadow-inner">
-                    <div className="absolute inset-0 flex items-center justify-center z-10">
-                         <span className="text-[9px] font-bold text-white/50">{userProfile.aura} / {getLevel(userProfile.aura) * 1000}</span>
-                    </div>
-                    <div 
-                        className="h-full bg-primary transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(var(--primary),0.8)]" 
-                        style={{ width: `${getProgress(userProfile.aura)}%` }}
-                    ></div>
-                </div>
-                <div className="mt-2 text-[10px] text-muted text-center font-mono">
-                    AURA SYNCHRONIZATION
-                </div>
-             </div>
-          </div>
-
-          <nav className="space-y-2">
-            {[
-                { id: 'dashboard', icon: LayoutDashboard, label: 'MISSION CONTROL' },
-                { id: 'analytics', icon: Trophy, label: 'LEADERBOARD' },
-                { id: 'history', icon: History, label: 'ARCHIVES' },
-                { id: 'settings', icon: Settings, label: 'SYSTEM CONFIG' }
-            ].map((item) => (
-                <button 
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id as any)}
-                  className={`
-                    w-full flex items-center gap-3 px-4 py-4 rounded-xl text-xs font-bold tracking-wider transition-all duration-200 border
-                    ${activeTab === item.id 
-                        ? 'bg-surface border-primary/50 text-foreground shadow-[0_0_15px_rgba(var(--primary),0.2)] translate-x-1' 
-                        : 'border-transparent text-muted hover:text-foreground hover:bg-surface-highlight'
-                    }
-                  `}
-                >
-                  <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-primary' : ''}`} />
-                  <span className="font-mono">{item.label}</span>
-                </button>
-            ))}
-          </nav>
         </div>
 
-        <div className="mt-auto p-6 border-t border-border bg-surface/50">
-           {/* Timer Toggle */}
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-6 custom-scrollbar space-y-8">
+            <div className="space-y-4">
+                {/* Aura Bar */}
+                <div className="bg-surface-highlight/50 rounded-xl p-4 border border-border relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold text-muted uppercase tracking-widest font-mono">Current Lvl</span>
+                        <span className="text-primary font-bold font-mono text-xl">{getLevel(userProfile.aura)}</span>
+                    </div>
+                    <div className="relative h-4 bg-black rounded-full border border-border overflow-hidden shadow-inner">
+                        <div className="absolute inset-0 flex items-center justify-center z-10">
+                            <span className="text-[9px] font-bold text-white/50">{userProfile.aura} / {getLevel(userProfile.aura) * 1000}</span>
+                        </div>
+                        <div 
+                            className="h-full bg-primary transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(var(--primary),0.8)]" 
+                            style={{ width: `${getProgress(userProfile.aura)}%` }}
+                        ></div>
+                    </div>
+                </div>
+
+                {/* Streak Flame */}
+                <div className="flex items-center gap-3 bg-orange-500/10 border border-orange-500/30 p-3 rounded-xl no-rot">
+                    <div className="w-8 h-8 rounded bg-orange-500/20 flex items-center justify-center">
+                        <Flame className={`w-5 h-5 text-orange-500 ${userProfile.streak > 0 ? 'animate-pulse' : 'opacity-50'}`} />
+                    </div>
+                    <div>
+                        <div className="text-[10px] font-bold text-orange-400 uppercase tracking-widest font-mono">Daily Streak</div>
+                        <div className="text-lg font-bold text-orange-500 font-mono">{userProfile.streak} Days</div>
+                    </div>
+                </div>
+            </div>
+
+            <nav className="space-y-2">
+                {[
+                    { id: 'dashboard', icon: LayoutDashboard, label: 'MISSION CONTROL' },
+                    { id: 'analytics', icon: Trophy, label: 'LEADERBOARD' },
+                    { id: 'history', icon: History, label: 'ARCHIVES' },
+                    { id: 'settings', icon: Settings, label: 'SYSTEM CONFIG' }
+                ].map((item) => (
+                    <button 
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id as any)}
+                    className={`
+                        w-full flex items-center gap-3 px-4 py-4 rounded-xl text-xs font-bold tracking-wider transition-all duration-200 border
+                        ${activeTab === item.id 
+                            ? 'bg-surface border-primary/50 text-foreground shadow-[0_0_15px_rgba(var(--primary),0.2)] translate-x-1' 
+                            : 'border-transparent text-muted hover:text-foreground hover:bg-surface-highlight'
+                        }
+                    `}
+                    >
+                    <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-primary' : ''}`} />
+                    <span className="font-mono">{item.label}</span>
+                    </button>
+                ))}
+            </nav>
+        </div>
+
+        {/* Footer - Fixed */}
+        <div className="p-6 border-t border-border bg-surface/50 mt-auto">
            <button 
              onClick={() => setShowPomodoro(!showPomodoro)}
              className={`w-full mb-4 flex items-center justify-center gap-2 py-2 rounded-lg border transition-all ${
@@ -486,83 +597,129 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto relative custom-scrollbar">
-         {/* Particle Explosion Container */}
          {explosion && <ParticleExplosion x={explosion.x} y={explosion.y} />}
 
         {/* Mobile Header */}
-        <div className="lg:hidden flex items-center justify-between p-4 border-b border-border bg-background sticky top-0 z-30">
+        <div className="lg:hidden flex items-center justify-between p-4 border-b border-border bg-background/90 backdrop-blur-md sticky top-0 z-30">
             <div className="flex items-center gap-2">
-                <Gamepad2 className="text-primary w-5 h-5" />
-                <span className="font-bold text-foreground font-mono tracking-tighter">STATUSBAR</span>
+                <div className="w-8 h-8 bg-primary rounded flex items-center justify-center shadow-lg">
+                   <Gamepad2 className="text-primary-fg w-5 h-5" />
+                </div>
+                <span className="font-bold text-foreground font-mono tracking-tighter text-lg">STATUSBAR</span>
             </div>
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-muted">
-                <Menu className="w-6 h-6" />
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-muted p-2 hover:bg-surface rounded-lg transition-colors">
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
         </div>
 
         {/* Mobile Menu Overlay */}
         {mobileMenuOpen && (
-            <div className="lg:hidden absolute top-16 left-0 w-full bg-background border-b border-border p-4 z-20 space-y-2 shadow-2xl">
-                 <button onClick={() => {setActiveTab('dashboard'); setMobileMenuOpen(false)}} className="block w-full text-left py-3 px-4 text-foreground font-mono text-sm bg-surface rounded border border-border">MISSION CONTROL</button>
-                 <button onClick={() => {setActiveTab('analytics'); setMobileMenuOpen(false)}} className="block w-full text-left py-3 px-4 text-muted font-mono text-sm hover:bg-surface rounded">LEADERBOARD</button>
-                 <button onClick={() => {setActiveTab('history'); setMobileMenuOpen(false)}} className="block w-full text-left py-3 px-4 text-muted font-mono text-sm hover:bg-surface rounded">ARCHIVES</button>
-                 <button onClick={() => {setShowPomodoro(!showPomodoro); setMobileMenuOpen(false)}} className="block w-full text-left py-3 px-4 text-primary font-mono text-sm hover:bg-surface rounded">TOGGLE TIMER</button>
-                 <button onClick={onLogout} className="block w-full text-left py-3 px-4 text-red-500 font-mono text-sm hover:bg-surface rounded">LOG OUT</button>
+            <div className="lg:hidden fixed inset-0 top-16 bg-background z-40 animate-in slide-in-from-top-10 duration-200 flex flex-col p-4 space-y-4 overflow-y-auto">
+                 <div className="space-y-2">
+                     <button onClick={() => {setActiveTab('dashboard'); setMobileMenuOpen(false)}} className={`block w-full text-left py-4 px-4 font-mono text-sm rounded-xl transition-colors border ${activeTab === 'dashboard' ? 'bg-primary/10 border-primary text-primary' : 'bg-surface border-border text-foreground'}`}>MISSION CONTROL</button>
+                     <button onClick={() => {setActiveTab('analytics'); setMobileMenuOpen(false)}} className={`block w-full text-left py-4 px-4 font-mono text-sm rounded-xl transition-colors border ${activeTab === 'analytics' ? 'bg-primary/10 border-primary text-primary' : 'bg-surface border-border text-muted'}`}>LEADERBOARD</button>
+                     <button onClick={() => {setActiveTab('history'); setMobileMenuOpen(false)}} className={`block w-full text-left py-4 px-4 font-mono text-sm rounded-xl transition-colors border ${activeTab === 'history' ? 'bg-primary/10 border-primary text-primary' : 'bg-surface border-border text-muted'}`}>ARCHIVES</button>
+                     <button onClick={() => {setActiveTab('settings'); setMobileMenuOpen(false)}} className={`block w-full text-left py-4 px-4 font-mono text-sm rounded-xl transition-colors border ${activeTab === 'settings' ? 'bg-primary/10 border-primary text-primary' : 'bg-surface border-border text-muted'}`}>SYSTEM CONFIG</button>
+                 </div>
+                 
+                 <div className="h-px bg-border my-2"></div>
+                 
+                 <div className="grid grid-cols-2 gap-4">
+                     <div className="bg-surface p-4 rounded-xl border border-border">
+                         <p className="text-[10px] text-muted uppercase font-mono mb-1">Current Aura</p>
+                         <p className="text-xl font-bold text-primary font-mono">{userProfile.aura}</p>
+                     </div>
+                     <div className="bg-surface p-4 rounded-xl border border-border">
+                         <p className="text-[10px] text-muted uppercase font-mono mb-1">Streak</p>
+                         <p className="text-xl font-bold text-orange-500 font-mono">{userProfile.streak}</p>
+                     </div>
+                 </div>
+
+                 <Button onClick={() => {setShowPomodoro(!showPomodoro); setMobileMenuOpen(false)}} variant="outline" className="w-full justify-start">
+                     <Timer className="w-4 h-4 mr-2" /> TOGGLE TIMER
+                 </Button>
+                 
+                 <Button onClick={onLogout} variant="danger" className="w-full justify-start mt-auto">
+                     <LogOut className="w-4 h-4 mr-2" /> LOG OUT
+                 </Button>
             </div>
         )}
 
-        <div className="max-w-7xl mx-auto p-6 lg:p-12 pb-32">
-            <header className="flex flex-col md:flex-row md:justify-between md:items-end mb-12 gap-6 animate-in slide-in-from-top-4 duration-500">
+        <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-12 pb-32">
+            <header className="flex flex-col md:flex-row md:justify-between md:items-end mb-8 lg:mb-12 gap-6 animate-in slide-in-from-top-4 duration-500">
                 <div>
-                    <h1 className="text-4xl md:text-5xl font-bold text-foreground tracking-tighter mb-2 font-mono uppercase glitch-text" style={{ textShadow: "2px 2px 0px var(--primary)" }}>
+                    <h1 className="text-3xl md:text-5xl font-bold text-foreground tracking-tighter mb-2 font-mono uppercase glitch-text leading-tight" style={{ textShadow: "2px 2px 0px var(--primary)" }}>
                         {activeTab === 'dashboard' && getGreeting()}
                         {activeTab === 'analytics' && "STATS & LOOT"}
                         {activeTab === 'history' && "MISSION LOGS"}
                         {activeTab === 'settings' && "CONFIG"}
                     </h1>
                     <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
-                        <p className="text-muted text-sm font-mono uppercase tracking-widest">
+                        <span className={`w-2 h-2 rounded-full animate-pulse ${rotMode ? 'bg-red-500' : 'bg-primary'}`}></span>
+                        <p className="text-muted text-xs md:text-sm font-mono uppercase tracking-widest">
                             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                         </p>
                     </div>
                 </div>
                 
-                {activeTab === 'dashboard' && schedule.length > 0 && (
-                    <div className="flex gap-3">
-                        <Button variant="outline" onClick={handleReOptimize} isLoading={isGenerating} className="text-xs px-4 h-10">
-                            <RefreshCcw className="w-3.5 h-3.5" />
-                            REROLL
-                        </Button>
+                {activeTab === 'dashboard' && (
+                    <div className="flex flex-wrap gap-2 no-rot">
+                        <button 
+                            onClick={toggleRotMode}
+                            className={`px-3 py-2 rounded-lg font-mono font-bold text-xs uppercase transition-all flex items-center gap-2 border ${
+                                rotMode 
+                                ? 'bg-zinc-800 border-zinc-700 text-zinc-400 shadow-inner' 
+                                : 'bg-surface border-border text-muted hover:text-foreground'
+                            }`}
+                        >
+                            <Skull className="w-4 h-4" />
+                            {rotMode ? 'Rot Enabled' : 'Rot Mode'}
+                        </button>
+                        {schedule.length > 0 && (
+                            <Button variant="outline" onClick={handleReOptimize} isLoading={isGenerating} className="text-xs px-4 h-10">
+                                <RefreshCcw className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline ml-2">REROLL</span>
+                            </Button>
+                        )}
                     </div>
                 )}
             </header>
 
             {activeTab === 'dashboard' && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
-                {/* Left Column: Input */}
-                <div className="lg:col-span-4 space-y-8 animate-in slide-in-from-left-4 duration-700 delay-100">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 relative">
+                {/* Left Column - Input & Context */}
+                <div className="lg:col-span-4 space-y-4">
                     <DailyVibeCheck onVibeSelect={handleVibeSelect} currentContext={scheduleContext} />
+                    <MoodTracker onMoodSelect={handleMoodSelect} />
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-surface/40 backdrop-blur-md rounded-2xl border border-border p-4 space-y-2">
+                             <div className="flex items-center gap-2 mb-2">
+                                 <Trophy className="w-4 h-4 text-primary" />
+                                 <h3 className="text-xs font-bold font-mono text-foreground uppercase">Aura</h3>
+                             </div>
+                             <div className="text-2xl font-bold font-mono text-primary">{userProfile.aura}</div>
+                             <div className="relative h-2 bg-black rounded-full overflow-hidden">
+                                <div className="absolute inset-0 bg-primary" style={{ width: `${getProgress(userProfile.aura)}%` }}></div>
+                             </div>
+                        </div>
+                        <div className="bg-surface/40 backdrop-blur-md rounded-2xl border border-border p-4 space-y-2 cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setShowPomodoro(true)}>
+                             <div className="flex items-center gap-2 mb-2">
+                                 <Timer className="w-4 h-4 text-primary" />
+                                 <h3 className="text-xs font-bold font-mono text-foreground uppercase">Focus</h3>
+                             </div>
+                             <div className="text-xs text-muted font-mono">Quick Access</div>
+                             <div className="text-xs font-bold text-primary font-mono uppercase">START TIMER &rarr;</div>
+                        </div>
+                    </div>
 
                     <TaskForm onAddTask={handleAddTask} />
                     
-                    {/* Brain Dump Area */}
-                    <div className="bg-surface/40 rounded-xl border border-border backdrop-blur-sm p-1 space-y-3 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-2 opacity-20 group-hover:opacity-50 transition-opacity">
-                             <BrainCircuit className="w-12 h-12 text-primary" />
-                        </div>
-                        <div className="p-4">
-                            <div className="flex items-center gap-2 text-primary mb-3">
-                                <h3 className="text-xs font-bold uppercase tracking-widest font-mono">Thought Stream</h3>
-                            </div>
-                            <textarea 
-                                value={brainDump}
-                                onChange={(e) => setBrainDump(e.target.value)}
-                                placeholder="// Input raw data..."
-                                className="w-full h-24 bg-black/30 rounded-lg border border-border p-3 text-sm text-muted placeholder-zinc-700 resize-none focus:ring-1 focus:ring-primary focus:border-primary outline-none font-mono"
-                            />
-                        </div>
-                    </div>
+                    <YapPad 
+                        value={yapText}
+                        onChange={setYapText}
+                        onAddTasks={handleAddYapTasks}
+                    />
 
                     <div className="bg-surface/40 rounded-xl border border-border backdrop-blur-sm overflow-hidden flex flex-col h-[400px]">
                         <div className="p-4 border-b border-border bg-surface/50 flex justify-between items-center">
@@ -598,7 +755,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
                                         />
                                         <CheckCircle2 className="absolute w-3.5 h-3.5 text-primary-fg pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" />
                                     </div>
-                                    
                                     <div className={`flex-1 min-w-0 transition-all duration-300 ${task.completed ? 'opacity-40 grayscale' : 'opacity-100'}`}>
                                         <p className={`text-sm font-bold truncate font-mono ${task.completed ? 'line-through text-muted' : 'text-foreground group-hover:text-primary'}`}>
                                             {task.title}
@@ -610,17 +766,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
                                                 'border-border text-muted bg-surface'
                                             }`}>{task.priority}</span>
                                             <span className="text-[9px] font-mono text-muted py-0.5">{task.durationMinutes}m</span>
-                                            {task.timeSpent && task.timeSpent > 0 && (
-                                                <span className="text-[9px] font-mono text-primary py-0.5 ml-auto flex items-center gap-1">
-                                                    <Flame className="w-2 h-2" />
-                                                    {task.timeSpent}m
-                                                </span>
-                                            )}
                                         </div>
                                     </div>
-
-                                    {/* Inline Edit/Delete */}
-                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 bg-surface border border-border rounded-md p-1 shadow-xl z-10">
+                                    <div className="flex gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 bg-surface border border-border rounded-md p-1 shadow-xl z-10">
                                         <button onClick={() => handleEditTaskClick(task.id)} className="p-1 text-muted hover:text-foreground hover:bg-surface-highlight rounded">
                                             <Pencil className="w-3 h-3" />
                                         </button>
@@ -633,18 +781,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
                             )}
                         </div>
                         <div className="p-4 bg-surface/80 border-t border-border backdrop-blur-md space-y-3">
-                            {/* Context Input */}
                             <div className="relative">
                                 <input 
                                     type="text" 
                                     value={scheduleContext}
                                     onChange={(e) => setScheduleContext(e.target.value)}
-                                    placeholder="Mission Strategy (e.g. 'Speedrun', 'Chill')"
+                                    placeholder="Strategy (e.g. 'Speedrun')"
                                     className="w-full bg-black/50 border border-border rounded px-3 py-2 text-xs text-foreground placeholder-zinc-600 focus:border-primary focus:outline-none font-mono"
                                 />
                                 <BrainCircuit className="absolute right-3 top-2.5 w-3.5 h-3.5 text-muted" />
                             </div>
-
                             <Button variant="neon" onClick={handleGenerateSchedule} className="w-full" disabled={tasks.length === 0} isLoading={isGenerating}>
                                 <Zap className="w-4 h-4" />
                                 INITIALIZE RUN
@@ -653,18 +799,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
                     </div>
                 </div>
 
-                {/* Right Column: Timeline */}
-                <div className="lg:col-span-8 animate-in slide-in-from-right-4 duration-700 delay-200">
-                    <div className="bg-surface/20 rounded-3xl p-1 min-h-[600px] transition-all relative">
-                        {/* Decorative HUD corners */}
+                {/* Right Column - Timeline */}
+                <div className="lg:col-span-8 space-y-4">
+                    <div className="bg-surface/20 rounded-3xl p-1 min-h-[500px] transition-all relative">
+                        {/* Corners */}
                         <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-primary/50 rounded-tl-xl pointer-events-none"></div>
                         <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-primary/50 rounded-tr-xl pointer-events-none"></div>
                         <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-primary/50 rounded-bl-xl pointer-events-none"></div>
                         <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-primary/50 rounded-br-xl pointer-events-none"></div>
 
-                        <div className="flex justify-between items-center mb-8 pl-4 pt-4 pr-4">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pl-4 pt-4 pr-4 gap-4">
                             <div className="flex items-baseline gap-3">
-                                <h3 className="text-2xl font-bold text-foreground font-mono tracking-tighter uppercase text-shadow-neon">Active Timeline</h3>
+                                <h3 className="text-xl md:text-2xl font-bold text-foreground font-mono tracking-tighter uppercase text-shadow-neon">Active Timeline</h3>
                                 {schedule.length > 0 && (
                                     <span className="text-[10px] uppercase tracking-widest font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded animate-pulse">
                                         Live
@@ -672,37 +818,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
                                 )}
                             </div>
                             {schedule.length > 0 && (
-                                <div className="flex gap-2">
+                                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                                     {schedule.find(s => !tasks.find(t=>t.id===s.taskId)?.completed && !s.isBreak) && (
                                         <Button 
                                             variant="neon"
                                             onClick={() => setFocusTask(schedule.find(s => !tasks.find(t=>t.id===s.taskId)?.completed && !s.isBreak) || null)}
-                                            className="text-xs h-9 px-4"
+                                            className="text-xs h-9 px-4 flex-1 sm:flex-none"
                                         >
                                             <Flame className="w-3.5 h-3.5 mr-1" />
                                             BOSS MODE
                                         </Button>
                                     )}
-                                    <Button 
-                                        variant="secondary" 
-                                        onClick={handleExportICS} 
-                                        className="text-xs h-9 px-3"
-                                    >
-                                        <CalendarPlus className="w-3.5 h-3.5" />
-                                    </Button>
-                                    <Button 
-                                        variant="secondary" 
-                                        onClick={handleGenerateInfographic} 
-                                        isLoading={isGeneratingInfographic}
-                                        className="text-xs h-9 px-3"
-                                    >
-                                        <ImageIcon className="w-3.5 h-3.5" />
-                                        {infographicUrl ? 'VIEW' : 'VISUAL'}
-                                    </Button>
+                                    <div className="flex gap-2 ml-auto sm:ml-0">
+                                        <Button variant="danger" onClick={handleRoast} className="text-xs h-9 px-3" title="Roast my schedule">
+                                            <Flame className="w-3.5 h-3.5" />
+                                        </Button>
+                                        <Button variant="secondary" onClick={() => setShowReceipt(true)} className="text-xs h-9 px-3" title="View Receipt">
+                                            <Receipt className="w-3.5 h-3.5" />
+                                        </Button>
+                                        <Button variant="secondary" onClick={handleExportICS} className="text-xs h-9 px-3">
+                                            <CalendarPlus className="w-3.5 h-3.5" />
+                                        </Button>
+                                        <Button variant="secondary" onClick={handleGenerateInfographic} isLoading={isGeneratingInfographic} className="text-xs h-9 px-3">
+                                            <ImageIcon className="w-3.5 h-3.5" />
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
                         </div>
-                        <div className="p-2">
+                        <div className="p-0 sm:p-2">
                             <Timeline 
                                 schedule={schedule} 
                                 isLoading={isGenerating} 
@@ -733,13 +877,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
             {activeTab === 'settings' && (
             <div className="max-w-2xl mx-auto bg-surface/60 backdrop-blur-xl rounded-2xl border border-border p-8 space-y-8 animate-in zoom-in-95 duration-500 relative overflow-hidden">
                 <div className="absolute inset-0 bg-grid-zinc-800/20 [mask-image:linear-gradient(0deg,white,transparent)] pointer-events-none"></div>
-                
                 <div>
                     <h2 className="text-xl font-bold text-foreground mb-1 font-mono uppercase">System Configuration</h2>
                     <p className="text-sm text-muted">Calibrate your productivity parameters.</p>
                 </div>
-
-                {/* Theme Selector */}
                 <div className="space-y-4 relative z-10">
                     <label className="text-xs font-bold text-primary uppercase tracking-wider font-mono flex items-center gap-2">
                       <Palette className="w-4 h-4" />
@@ -770,48 +911,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
                            )}
                         </button>
                       ))}
-                    </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-primary uppercase tracking-wider font-mono">Codename</label>
-                        <input 
-                            type="text" 
-                            value={userProfile.name}
-                            onChange={(e) => setUserProfile({...userProfile, name: e.target.value})}
-                            className="w-full bg-black/50 border border-border rounded p-3 text-foreground focus:border-primary focus:outline-none transition-colors font-mono"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-primary uppercase tracking-wider font-mono">Peak Hours</label>
-                        <select 
-                            value={userProfile.productiveHours}
-                            onChange={(e) => setUserProfile({...userProfile, productiveHours: e.target.value})}
-                            className="w-full bg-black/50 border border-border rounded p-3 text-foreground focus:border-primary focus:outline-none transition-colors appearance-none cursor-pointer font-mono"
-                        >
-                            <option value="morning">Morning (Early Game)</option>
-                            <option value="afternoon">Afternoon (Mid Game)</option>
-                            <option value="night">Night (End Game)</option>
-                        </select>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-primary uppercase tracking-wider font-mono">Boot Time</label>
-                        <input 
-                            type="time" 
-                            value={userProfile.wakeUpTime}
-                            onChange={(e) => setUserProfile({...userProfile, wakeUpTime: e.target.value})}
-                            className="w-full bg-black/50 border border-border rounded p-3 text-foreground focus:border-primary focus:outline-none transition-colors font-mono"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-primary uppercase tracking-wider font-mono">Shutdown</label>
-                        <input 
-                            type="time" 
-                            value={userProfile.sleepTime}
-                            onChange={(e) => setUserProfile({...userProfile, sleepTime: e.target.value})}
-                            className="w-full bg-black/50 border border-border rounded p-3 text-foreground focus:border-primary focus:outline-none transition-colors font-mono"
-                        />
                     </div>
                 </div>
                  <div className="pt-6 border-t border-border flex justify-between items-center relative z-10">
@@ -853,6 +952,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
             onSave={handleSaveTask} 
             onClose={() => setEditingTask(null)} 
         />
+      )}
+
+      {roast && (
+        <RoastModal roast={roast} onClose={() => setRoast(null)} />
+      )}
+
+      {showReceipt && (
+        <ReceiptModal schedule={schedule} user={userProfile} onClose={() => setShowReceipt(false)} />
       )}
 
       {showInfographicModal && infographicUrl && (
