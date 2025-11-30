@@ -28,6 +28,8 @@ export interface Task {
   energyRequired: EnergyLevel;
   deadline?: string;
   completed: boolean;
+  completedAt?: string; // ISO Date string
+  timeSpent?: number; // Minutes spent on task
 }
 
 export interface ScheduleItem {
@@ -40,12 +42,24 @@ export interface ScheduleItem {
   isBreak: boolean;
 }
 
+export interface PomodoroSettings {
+  workDuration: number;
+  shortBreakDuration: number;
+  longBreakDuration: number;
+  autoStartBreaks: boolean;
+  autoStartPomodoros: boolean;
+}
+
+export type Theme = 'cyber' | 'y2k' | 'brat' | 'cozy' | 'drift';
+
 export interface UserProfile {
   name: string;
   wakeUpTime: string;
   sleepTime: string;
   productiveHours: string; // e.g. "morning", "night"
   aura: number; // XP System
+  pomodoroSettings?: PomodoroSettings;
+  theme: Theme;
 }
 
 export interface AnalysisData {

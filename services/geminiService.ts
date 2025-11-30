@@ -41,7 +41,7 @@ const subTaskSchema: Schema = {
 export const generateSmartSchedule = async (
   tasks: Task[], 
   profile: UserProfile, 
-  context: string = "Initial planning"
+  context: string = "Standard productivity flow"
 ): Promise<ScheduleItem[]> => {
   
   if (tasks.length === 0) return [];
@@ -54,8 +54,15 @@ export const generateSmartSchedule = async (
     - Sleep: ${profile.sleepTime}
     - Peak Productivity: ${profile.productiveHours}
 
-    Context: ${context}
-
+    USER STRATEGY / CONTEXT: "${context}"
+    
+    INSTRUCTIONS FOR AI:
+    1. Adjust the schedule pacing based on the USER STRATEGY above.
+       - If "Deep Work", "Grind", or "Focus": Create longer blocks, fewer breaks, and group high-energy tasks.
+       - If "Chill", "Light", or "Recovery": Add more frequent "Touch Grass" breaks, space out tasks, and avoid burnout.
+       - If "Deadline" or "Urgent": Prioritize high-priority tasks aggressively.
+       - If unspecified, balance the schedule normally.
+    
     Tasks to schedule:
     ${JSON.stringify(tasks)}
 

@@ -1,32 +1,37 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, Play, Pause, CheckCircle2, Maximize2, Minimize2, Flame } from 'lucide-react';
 import { ScheduleItem } from '../types';
 
 interface FocusModeProps {
   currentTask: ScheduleItem;
-  onComplete: () => void;
-  onClose: () => void;
+  onComplete: (timeSpent: number) => void;
+  onClose: (timeSpent: number) => void;
 }
 
 export const FocusMode: React.FC<FocusModeProps> = ({ currentTask, onComplete, onClose }) => {
   const [timeLeft, setTimeLeft] = useState(25 * 60); 
+  const [elapsed, setElapsed] = useState(0); // Track total seconds spent
   const [isActive, setIsActive] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     setTimeLeft(25 * 60); 
+    setElapsed(0);
+    setIsActive(false);
   }, [currentTask]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
 
-    if (isActive && timeLeft > 0) {
+    if (isActive) {
       interval = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
+        if (timeLeft > 0) {
+          setTimeLeft((prev) => prev - 1);
+        }
+        setElapsed((prev) => prev + 1);
       }, 1000);
-    } else if (timeLeft === 0) {
-      setIsActive(false);
-    }
+    } 
 
     return () => clearInterval(interval);
   }, [isActive, timeLeft]);
@@ -37,6 +42,16 @@ export const FocusMode: React.FC<FocusModeProps> = ({ currentTask, onComplete, o
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  const getMinutesSpent = () => Math.floor(elapsed / 60);
+
+  const handleClose = () => {
+    onClose(getMinutesSpent());
+  };
+
+  const handleComplete = () => {
+    onComplete(getMinutesSpent());
   };
 
   const toggleFullscreen = () => {
@@ -66,7 +81,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({ currentTask, onComplete, o
         <button onClick={toggleFullscreen} className="text-zinc-500 hover:text-white transition-colors p-2 hover:bg-zinc-800 rounded-full">
             {isFullscreen ? <Minimize2 className="w-6 h-6" /> : <Maximize2 className="w-6 h-6" />}
         </button>
-        <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors p-2 hover:bg-zinc-800 rounded-full">
+        <button onClick={handleClose} className="text-zinc-500 hover:text-white transition-colors p-2 hover:bg-zinc-800 rounded-full">
           <X className="w-6 h-6" />
         </button>
       </div>
@@ -93,6 +108,13 @@ export const FocusMode: React.FC<FocusModeProps> = ({ currentTask, onComplete, o
             <div className="text-[120px] md:text-[180px] font-mono font-bold tracking-tighter tabular-nums leading-none text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
                 {formatTime(timeLeft)}
             </div>
+            {elapsed > 0 && (
+                 <div className="absolute -bottom-8 left-0 right-0 text-center">
+                    <span className="text-zinc-500 font-mono text-sm uppercase tracking-widest">
+                        Total Time: {Math.floor(elapsed / 60)}m {elapsed % 60}s
+                    </span>
+                 </div>
+            )}
         </div>
 
         <div className="flex items-center justify-center gap-8">
@@ -104,7 +126,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({ currentTask, onComplete, o
             </button>
             
             <button 
-                onClick={() => { onComplete(); onClose(); }}
+                onClick={handleComplete}
                 className="w-24 h-24 rounded-2xl border-b-4 border-emerald-700 bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-400 transition-all group shadow-[0_0_30px_rgba(16,185,129,0.4)] active:border-b-0 active:translate-y-1"
             >
                 <CheckCircle2 className="w-10 h-10 group-hover:rotate-12 transition-transform" />

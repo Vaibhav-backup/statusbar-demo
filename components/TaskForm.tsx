@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Plus, ArrowRight, Wand2 } from 'lucide-react';
+
+import React, { useState, useEffect } from 'react';
+import { Plus, ArrowRight, Wand2, BatteryLow, BatteryMedium, BatteryCharging, Signal, SignalMedium, SignalHigh, Save, X, Layers, Disc } from 'lucide-react';
 import { Task, Priority, EnergyLevel, TaskCategory } from '../types';
 import { Button } from './Button';
 import { breakDownComplexTask } from '../services/geminiService';
@@ -7,6 +8,15 @@ import { TaskBreakdownModal } from './TaskBreakdownModal';
 
 interface TaskFormProps {
   onAddTask: (task: Omit<Task, 'id' | 'completed'>) => void;
+}
+
+interface TaskTemplate {
+  id: string;
+  title: string;
+  durationMinutes: number;
+  priority: Priority;
+  category: TaskCategory;
+  energyRequired: EnergyLevel;
 }
 
 export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask }) => {
@@ -19,6 +29,16 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask }) => {
   const [isBreakingDown, setIsBreakingDown] = useState(false);
   const [showBreakdownModal, setShowBreakdownModal] = useState(false);
   const [generatedSubTasks, setGeneratedSubTasks] = useState<any[]>([]);
+
+  // Macros / Templates State
+  const [templates, setTemplates] = useState<TaskTemplate[]>(() => {
+    const saved = localStorage.getItem('statusbar_macros');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('statusbar_macros', JSON.stringify(templates));
+  }, [templates]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,106 +81,226 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask }) => {
             energyRequired: task.energyRequired as EnergyLevel
         });
     });
-    // Clear parent title after successfully adding subtasks
     setTitle('');
   };
 
-  const getPriorityLabel = (p: Priority) => {
-    switch(p) {
-      case Priority.High: return "High Priority";
-      case Priority.Medium: return "Medium";
-      case Priority.Low: return "Low Priority";
-      default: return p;
-    }
+  const handleSaveMacro = () => {
+    if (!title.trim()) return;
+    
+    const newTemplate: TaskTemplate = {
+      id: Date.now().toString(),
+      title,
+      durationMinutes: duration,
+      priority,
+      category,
+      energyRequired: energy
+    };
+
+    setTemplates(prev => [...prev, newTemplate]);
+  };
+
+  const handleLoadMacro = (template: TaskTemplate) => {
+    setTitle(template.title);
+    setDuration(template.durationMinutes);
+    setPriority(template.priority);
+    setCategory(template.category);
+    setEnergy(template.energyRequired);
+  };
+
+  const handleDeleteMacro = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setTemplates(prev => prev.filter(t => t.id !== id));
   };
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl border border-zinc-800/50 space-y-6 transition-all hover:border-zinc-700/50">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-widest">New Task</h3>
-        </div>
+      <div className="bg-surface/40 backdrop-blur-md p-6 rounded-2xl border border-border space-y-6 transition-all hover:border-border/80 relative overflow-hidden">
         
-        <div className="space-y-1 relative">
-          <div className="flex gap-2">
-            <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="What needs to be done?"
-                className="w-full bg-transparent border-b border-zinc-800 py-3 text-lg text-white placeholder-zinc-600 focus:border-white focus:outline-none transition-colors"
-            />
-            {title.trim().length > 3 && (
-                <button 
-                    type="button"
-                    onClick={handleBreakDown}
-                    disabled={isBreakingDown}
-                    className="absolute right-0 top-2 p-2 text-zinc-400 hover:text-purple-400 transition-colors disabled:opacity-50"
-                    title="AI Break Down"
-                >
-                    {isBreakingDown ? (
-                        <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full" />
-                    ) : (
-                        <Wand2 className="w-5 h-5" />
-                    )}
-                </button>
-            )}
-          </div>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-muted uppercase tracking-widest font-mono flex items-center gap-2">
+            <Plus className="w-4 h-4" /> New Task Protocol
+          </h3>
+          
+          {/* Quick Save Macro Button */}
+          {title.trim().length > 0 && (
+             <button 
+               onClick={handleSaveMacro}
+               className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 text-primary hover:bg-primary/10 px-2 py-1 rounded transition-colors"
+               title="Save configuration as Macro"
+             >
+               <Save className="w-3 h-3" /> Save Macro
+             </button>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Duration</label>
-            <div className="flex items-center gap-2">
+        {/* Macros Bar */}
+        {templates.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+            {templates.map(temp => (
+              <div 
+                key={temp.id}
+                onClick={() => handleLoadMacro(temp)}
+                className="flex-shrink-0 group relative flex items-center gap-2 px-3 py-1.5 bg-black/40 border border-border hover:border-primary/50 rounded-lg cursor-pointer transition-all hover:bg-surface-highlight"
+              >
+                <Disc className="w-3 h-3 text-muted group-hover:text-primary" />
+                <span className="text-xs font-mono text-muted group-hover:text-foreground truncate max-w-[100px]">{temp.title}</span>
+                <button 
+                  onClick={(e) => handleDeleteMacro(e, temp.id)}
+                  className="ml-1 text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-1 relative">
+            <div className="flex gap-2">
               <input
-                type="number"
-                value={duration}
-                onChange={(e) => setDuration(parseInt(e.target.value))}
-                className="w-20 bg-zinc-800/50 border-none rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-white/20 outline-none text-sm"
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="What needs to be done?"
+                  className="w-full bg-transparent border-b border-border py-3 text-lg text-foreground placeholder-muted focus:border-primary focus:outline-none transition-colors font-mono"
               />
-              <span className="text-sm text-zinc-500">min</span>
+              {title.trim().length > 3 && (
+                  <button 
+                      type="button"
+                      onClick={handleBreakDown}
+                      disabled={isBreakingDown}
+                      className="absolute right-0 top-2 p-2 text-muted hover:text-primary transition-colors disabled:opacity-50"
+                      title="AI Break Down"
+                  >
+                      {isBreakingDown ? (
+                          <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full" />
+                      ) : (
+                          <Wand2 className="w-5 h-5" />
+                      )}
+                  </button>
+              )}
             </div>
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Category</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as TaskCategory)}
-              className="w-full bg-zinc-800/50 border-none rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-white/20 outline-none text-sm appearance-none cursor-pointer"
-            >
-              {Object.values(TaskCategory).map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Priority</label>
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as Priority)}
-              className="w-full bg-zinc-800/50 border-none rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-white/20 outline-none text-sm appearance-none cursor-pointer"
-            >
-              {Object.values(Priority).map(p => <option key={p} value={p}>{getPriorityLabel(p)}</option>)}
-            </select>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider font-mono">Duration</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={duration}
+                  onChange={(e) => setDuration(parseInt(e.target.value))}
+                  className="w-20 bg-surface-highlight border-none rounded-lg px-3 py-2 text-foreground focus:ring-1 focus:ring-primary outline-none text-sm font-mono"
+                />
+                <span className="text-sm text-muted font-mono">min</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider font-mono">Category</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as TaskCategory)}
+                className="w-full bg-surface-highlight border-none rounded-lg px-3 py-2 text-foreground focus:ring-1 focus:ring-primary outline-none text-sm appearance-none cursor-pointer font-mono"
+              >
+                {Object.values(TaskCategory).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Energy</label>
-            <select
-              value={energy}
-              onChange={(e) => setEnergy(e.target.value as EnergyLevel)}
-              className="w-full bg-zinc-800/50 border-none rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-white/20 outline-none text-sm appearance-none cursor-pointer"
-            >
-              {Object.values(EnergyLevel).map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
-          </div>
-        </div>
 
-        <Button type="submit" className="w-full group">
-          <span>Add to Queue</span>
-          <ArrowRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 group-hover:translate-x-1 transition-all" />
-        </Button>
-      </form>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider font-mono">Priority</label>
+              <div className="grid grid-cols-3 gap-2">
+                 {(Object.values(Priority) as Priority[]).map((p) => {
+                   let icon = <Signal className="w-3 h-3" />;
+                   let color = "text-muted";
+                   if (p === Priority.Low) { icon = <Signal className="w-3 h-3 text-emerald-400" />; color="text-emerald-400"; }
+                   if (p === Priority.Medium) { icon = <SignalMedium className="w-3 h-3 text-blue-400" />; color="text-blue-400"; }
+                   if (p === Priority.High) { icon = <SignalHigh className="w-3 h-3 text-red-400" />; color="text-red-400"; }
+                   
+                   return (
+                     <button
+                       key={p}
+                       type="button"
+                       onClick={() => setPriority(p)}
+                       className={`
+                          flex flex-col items-center justify-center p-2 rounded-lg border transition-all duration-200
+                          ${priority === p 
+                            ? `bg-surface-highlight border-${color.split('-')[1]}-500/50 shadow-[0_0_10px_rgba(0,0,0,0.2)]` 
+                            : 'bg-surface/20 border-transparent hover:bg-surface-highlight/50 opacity-60 hover:opacity-100'
+                          }
+                       `}
+                     >
+                       <div className="mb-1">{icon}</div>
+                       <span className={`text-[9px] font-bold uppercase ${priority === p ? 'text-foreground' : 'text-muted'}`}>
+                         {p}
+                       </span>
+                     </button>
+                   );
+                 })}
+              </div>
+            </div>
+            
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider font-mono">Energy Output</label>
+              <div className="grid grid-cols-3 gap-2">
+                 {(Object.values(EnergyLevel) as EnergyLevel[]).map((level) => {
+                   let icon = null;
+                   let colorClass = '';
+                   let label = '';
+                   let desc = '';
+
+                   if (level === EnergyLevel.Low) {
+                      icon = <BatteryLow className="w-4 h-4" />;
+                      colorClass = 'text-emerald-400';
+                      label = 'Low';
+                      desc = 'Chill';
+                   } else if (level === EnergyLevel.Medium) {
+                      icon = <BatteryMedium className="w-4 h-4" />;
+                      colorClass = 'text-amber-400';
+                      label = 'Med';
+                      desc = 'Standard';
+                   } else {
+                      icon = <BatteryCharging className="w-4 h-4" />;
+                      colorClass = 'text-rose-400';
+                      label = 'High';
+                      desc = 'Grind';
+                   }
+
+                   return (
+                     <button
+                       key={level}
+                       type="button"
+                       onClick={() => setEnergy(level)}
+                       className={`
+                          flex flex-col items-center justify-center p-2 rounded-lg border transition-all duration-200
+                          ${energy === level 
+                            ? `bg-surface-highlight border-${colorClass.split('-')[1]}-500/50 shadow-[0_0_10px_rgba(0,0,0,0.2)]` 
+                            : 'bg-surface/20 border-transparent hover:bg-surface-highlight/50 opacity-60 hover:opacity-100'
+                          }
+                       `}
+                     >
+                       <div className={`${energy === level ? colorClass : 'text-muted'} transition-colors mb-0.5`}>
+                           {icon}
+                       </div>
+                       <span className={`text-[9px] font-bold uppercase font-mono ${energy === level ? 'text-foreground' : 'text-muted'}`}>
+                           {label}
+                       </span>
+                       <span className="text-[7px] text-muted/60 font-mono tracking-tighter uppercase">{desc}</span>
+                     </button>
+                   );
+                 })}
+              </div>
+            </div>
+          </div>
+
+          <Button type="submit" className="w-full group">
+            <span>Add to Queue</span>
+            <ArrowRight className="w-4 h-4 text-primary-fg/70 group-hover:text-primary-fg group-hover:translate-x-1 transition-all" />
+          </Button>
+        </form>
+      </div>
 
       {showBreakdownModal && (
         <TaskBreakdownModal 
