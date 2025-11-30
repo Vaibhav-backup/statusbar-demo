@@ -268,7 +268,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask }) => {
                       colorClass = 'text-amber-400';
                       activeClass = 'bg-amber-500/20 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]';
                       label = 'Med';
-                      desc = 'Std';
+                      desc = 'Flow';
                    } else {
                       icon = <Zap className="w-5 h-5" />;
                       colorClass = 'text-rose-400';
