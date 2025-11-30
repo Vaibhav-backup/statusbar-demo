@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Task, ScheduleItem, UserProfile, ToastMessage, PomodoroSettings, Theme, TaskCategory } from '../types';
 import { generateSmartSchedule, getMotivationalNudge, generateScheduleInfographic, roastSchedule } from '../services/geminiService';
@@ -410,7 +409,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
 
   const handleExportICS = () => {
     if (schedule.length === 0) return;
-    let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Statusbar//AI Schedule//EN\n";
+    let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//NEXUS//AI Schedule//EN\n";
     const now = new Date();
     const pad = (n: number) => n < 10 ? '0' + n : n;
     const formatLocal = (date: Date) => `${date.getFullYear()}${pad(date.getMonth()+1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
@@ -424,7 +423,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
             const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM);
             if (endDate < startDate) endDate.setDate(endDate.getDate() + 1);
             icsContent += "BEGIN:VEVENT\n";
-            icsContent += `UID:${item.id}@statusbar.app\n`;
+            icsContent += `UID:${item.id}@nexus.ai\n`;
             icsContent += `DTSTAMP:${formatLocal(new Date())}\n`;
             icsContent += `DTSTART:${formatLocal(startDate)}\n`;
             icsContent += `DTEND:${formatLocal(endDate)}\n`;
@@ -437,7 +436,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
     const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
-    link.setAttribute('download', `statusbar-mission-${now.toISOString().split('T')[0]}.ics`);
+    link.setAttribute('download', `nexus-mission-${now.toISOString().split('T')[0]}.ics`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -490,7 +489,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
               <Gamepad2 className="text-primary-fg w-6 h-6" />
             </div>
             <div>
-                 <span className="text-2xl font-bold tracking-tighter text-foreground font-mono">STATUSBAR</span>
+                 <span className="text-2xl font-bold tracking-tighter text-foreground font-mono">NEXUS</span>
                  <div className="h-0.5 w-full bg-gradient-to-r from-primary to-transparent"></div>
             </div>
           </div>
@@ -605,7 +604,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
                 <div className="w-8 h-8 bg-primary rounded flex items-center justify-center shadow-lg">
                    <Gamepad2 className="text-primary-fg w-5 h-5" />
                 </div>
-                <span className="font-bold text-foreground font-mono tracking-tighter text-lg">STATUSBAR</span>
+                <span className="font-bold text-foreground font-mono tracking-tighter text-lg">NEXUS</span>
             </div>
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-muted p-2 hover:bg-surface rounded-lg transition-colors">
                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -987,7 +986,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
                   <div className="p-6 border-t border-border bg-surface/50 flex justify-end gap-3">
                       <a 
                         href={infographicUrl} 
-                        download={`statusbar-mission-map-${new Date().toISOString().split('T')[0]}.png`}
+                        download={`nexus-mission-map-${new Date().toISOString().split('T')[0]}.png`}
                         className="inline-flex items-center gap-2 px-8 py-3 bg-primary text-primary-fg hover:bg-primary/90 rounded-lg font-bold text-sm transition-all shadow-lg shadow-primary/20 font-mono uppercase tracking-widest"
                       >
                           <Download className="w-4 h-4" />

@@ -67,7 +67,7 @@ export default function App() {
               <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
               <h1 className="text-2xl font-bold mb-2">API Key Missing</h1>
               <p className="text-muted max-w-md">
-                  Statusbar requires a Google Gemini API Key to function. 
+                  NEXUS requires a Google Gemini API Key to function. 
                   Please restart the environment with a valid API key.
               </p>
           </div>

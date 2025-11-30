@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from './Button';
 import { 
@@ -122,7 +121,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center group-hover:rotate-12 transition-transform">
               <Zap className="text-black w-4 h-4 fill-current" />
             </div>
-            <span className="text-lg font-bold tracking-tight font-mono">Statusbar_</span>
+            <span className="text-lg font-bold tracking-tight font-mono">NEXUS_</span>
           </div>
           <div className="flex items-center gap-4">
               <button onClick={onGetStarted} className="text-xs font-mono text-zinc-400 hover:text-white transition-colors hidden sm:block">Log In</button>
@@ -394,7 +393,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                 </Button>
             </div>
             <p className="mt-8 text-zinc-600 text-sm font-mono">
-                STATUSBAR_SYSTEM_V2.5 // ALL RIGHTS RESERVED
+                NEXUS_SYSTEM_V2.5 // ALL RIGHTS RESERVED
             </p>
           </div>
       </footer>

@@ -1,4 +1,3 @@
-
 import React, { useRef } from 'react';
 import { X, Download, Barcode } from 'lucide-react';
 import { ScheduleItem, UserProfile } from '../types';
@@ -21,7 +20,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ schedule, user, onCl
             scale: 2
         });
         const link = document.createElement('a');
-        link.download = `statusbar-receipt-${new Date().toISOString().split('T')[0]}.png`;
+        link.download = `nexus-receipt-${new Date().toISOString().split('T')[0]}.png`;
         link.href = canvas.toDataURL();
         link.click();
     } catch (e) {
@@ -40,7 +39,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ schedule, user, onCl
                 <div className="absolute -top-2 left-0 w-full h-3 receipt-edge rotate-180"></div>
                 
                 <div className="text-center space-y-2 mb-6 border-b-2 border-dashed border-black pb-4">
-                    <h2 className="text-3xl font-bold uppercase tracking-widest">STATUSBAR</h2>
+                    <h2 className="text-3xl font-bold uppercase tracking-widest">NEXUS</h2>
                     <p className="text-lg uppercase">Daily Manifest</p>
                     <p className="text-sm">{today.toLocaleDateString()} {today.toLocaleTimeString()}</p>
                     <p className="text-sm">USER: {user.name.toUpperCase()}</p>
@@ -74,7 +73,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ schedule, user, onCl
                         <Barcode className="w-32 h-12" />
                     </div>
                     <p className="text-xs">THANK YOU FOR LOCKING IN</p>
-                    <p className="text-xs">statusbar.app</p>
+                    <p className="text-xs">nexus.ai</p>
                 </div>
 
                 {/* Jagged Bottom */}

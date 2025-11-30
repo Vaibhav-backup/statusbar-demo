@@ -64,7 +64,7 @@ export const generateSmartSchedule = async (
   if (tasks.length === 0) return [];
 
   const prompt = `
-    You are Statusbar, an advanced AI productivity scheduler with a Gen Z personality.
+    You are NEXUS, an advanced AI productivity scheduler with a Gen Z personality.
     
     User Profile:
     - Wake up: ${profile.wakeUpTime}
@@ -74,11 +74,10 @@ export const generateSmartSchedule = async (
     USER STRATEGY / CONTEXT: "${context}"
     
     INSTRUCTIONS FOR AI:
-    1. Adjust the schedule pacing based on the USER STRATEGY above.
-       - If "Deep Work", "Grind", or "Focus": Create longer blocks, fewer breaks, and group high-energy tasks.
-       - If "Chill", "Light", or "Recovery": Add more frequent "Touch Grass" breaks, space out tasks, and avoid burnout.
-       - If "Deadline" or "Urgent": Prioritize high-priority tasks aggressively.
-       - If unspecified, balance the schedule normally.
+    1. Adjust the pacing based on the USER STRATEGY.
+       - If "Deep Work", "Grind", or "Focus": Create longer blocks, fewer breaks.
+       - If "Chill", "Light", or "Recovery": Add more frequent "Touch Grass" breaks.
+       - If unspecified, balance normally.
     
     Tasks to schedule:
     ${JSON.stringify(tasks)}
@@ -88,9 +87,9 @@ export const generateSmartSchedule = async (
     1. Respect the user's wake and sleep times.
     2. Place High priority/High energy tasks during peak productivity hours (The "Locked In" hours).
     3. Insert short breaks (5-15 mins) between deep work sessions. Call them "Touch Grass" or "Vibe Check".
-    4. Group similar tasks (Task Batching) where possible.
+    4. Group similar tasks (Task Batching).
     5. Ensure high priority tasks are scheduled first.
-    6. If the day is overbooked, suggest moving low priority tasks to tomorrow (but do not schedule them today).
+    6. If the day is overbooked, suggest moving low priority tasks to tomorrow.
     7. The 'description' field in the JSON should use Gen Z slang, be hype, and fun. Examples: "Main character energy for this one", "Go touch grass", "We ball", "Academic weapon mode", "No cap, this needs doing".
     
     Return a JSON array representing the schedule.
@@ -133,7 +132,7 @@ export const breakDownComplexTask = async (taskDescription: string): Promise<any
     - Energy Required (High/Medium/Low)
     - Category (Work, Study, Health, Personal, Break)
     
-    Keep the titles concise and actionable. Use a bit of Gen Z flair if appropriate but keep it clear.
+    Keep the titles concise and actionable.
   `;
 
   try {
@@ -184,12 +183,12 @@ export const generateScheduleInfographic = async (schedule: ScheduleItem[]): Pro
     - Gen Z Aesthetic: Neon accents, clean lines, maybe a bit cyberpunk or retro-futuristic.
     - Layout: Optimize for a 16:9 Landscape view. Use a horizontal timeline or a grid layout.
     - Font: Bold, legible, sans-serif.
+    - Title: "NEXUS DAILY LOG"
     
     Content to visualize:
     ${scheduleText}
     
     Make it look like a cool HUD or a stats screen from a video game.
-    Do not include too much text, just the times and the task titles.
   `;
 
   try {
