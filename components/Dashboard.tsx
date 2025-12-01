@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { Task, ScheduleItem, UserProfile, ToastMessage, PomodoroSettings, Theme, TaskCategory } from '../types';
 import { generateSmartSchedule, getMotivationalNudge, generateScheduleInfographic, roastSchedule } from '../services/geminiService';
 import { Button } from './Button';
@@ -37,7 +38,13 @@ import {
   Palette,
   History,
   Receipt,
-  Skull
+  Skull,
+  User,
+  Clock,
+  Database,
+  Upload,
+  Save,
+  Volume2
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -138,6 +145,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showInfographicModal, setShowInfographicModal] = useState(false);
   const [showPomodoro, setShowPomodoro] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Infographic
   const [infographicUrl, setInfographicUrl] = useState<string | null>(null);
@@ -442,6 +450,44 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
     document.body.removeChild(link);
   };
 
+  const handleExportData = () => {
+    const data = {
+        profile: userProfile,
+        tasks,
+        schedule,
+        exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.setAttribute('download', `nexus-backup-${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    addToast("SYSTEM BACKUP COMPLETE", "success");
+  };
+
+  const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        try {
+            const data = JSON.parse(event.target?.result as string);
+            if (data.profile) setUserProfile(data.profile);
+            if (data.tasks) setTasks(data.tasks);
+            if (data.schedule) setSchedule(data.schedule);
+            addToast("SYSTEM RESTORED", "success");
+        } catch (error) {
+            addToast("CORRUPT DATA FILE", "error");
+        }
+    };
+    reader.readAsText(file);
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 5) return "LATE NIGHT RAID?";
@@ -475,6 +521,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
     if (schedule.length > 0) {
          addToast("REROLL SUGGESTED", "info");
     }
+  };
+
+  const handleProfileUpdate = (key: keyof UserProfile, value: any) => {
+      setUserProfile(prev => ({ ...prev, [key]: value }));
   };
 
   return (
@@ -863,7 +913,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
 
             {activeTab === 'analytics' && (
                 <div className="max-w-4xl mx-auto animate-in zoom-in-95 duration-500">
-                    <Analytics tasks={tasks} schedule={schedule} />
+                    <Analytics tasks={tasks} schedule={schedule} userProfile={userProfile} />
                 </div>
             )}
             
@@ -874,52 +924,144 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
             )}
 
             {activeTab === 'settings' && (
-            <div className="max-w-2xl mx-auto bg-surface/60 backdrop-blur-xl rounded-2xl border border-border p-8 space-y-8 animate-in zoom-in-95 duration-500 relative overflow-hidden">
+            <div className="max-w-3xl mx-auto bg-surface/60 backdrop-blur-xl rounded-2xl border border-border p-8 space-y-12 animate-in zoom-in-95 duration-500 relative overflow-hidden">
                 <div className="absolute inset-0 bg-grid-zinc-800/20 [mask-image:linear-gradient(0deg,white,transparent)] pointer-events-none"></div>
+                
                 <div>
-                    <h2 className="text-xl font-bold text-foreground mb-1 font-mono uppercase">System Configuration</h2>
-                    <p className="text-sm text-muted">Calibrate your productivity parameters.</p>
+                    <h2 className="text-2xl font-bold text-foreground mb-1 font-mono uppercase">System Configuration</h2>
+                    <p className="text-sm text-muted">Customize your NEXUS environment parameters.</p>
                 </div>
-                <div className="space-y-4 relative z-10">
-                    <label className="text-xs font-bold text-primary uppercase tracking-wider font-mono flex items-center gap-2">
-                      <Palette className="w-4 h-4" />
-                      Visual Interface
-                    </label>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                      {THEMES.map((theme) => (
-                        <button
-                          key={theme.id}
-                          onClick={() => setUserProfile({...userProfile, theme: theme.id})}
-                          className={`
-                             group relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all
-                             ${userProfile.theme === theme.id 
-                                ? 'border-primary bg-primary/10' 
-                                : 'border-border bg-black/40 hover:border-border/80'
-                             }
-                          `}
-                        >
-                           <div 
-                              className="w-8 h-8 rounded-full shadow-lg"
-                              style={{ backgroundColor: theme.color }}
-                           ></div>
-                           <span className={`text-[10px] font-bold uppercase font-mono ${userProfile.theme === theme.id ? 'text-primary' : 'text-muted'}`}>
-                             {theme.label}
-                           </span>
-                           {userProfile.theme === theme.id && (
-                             <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-                           )}
-                        </button>
-                      ))}
-                    </div>
+
+                <div className="space-y-8 relative z-10">
+                    
+                    {/* PROFILE SETTINGS */}
+                    <section className="space-y-4">
+                        <label className="text-xs font-bold text-primary uppercase tracking-wider font-mono flex items-center gap-2">
+                            <User className="w-4 h-4" /> Identity Matrix
+                        </label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <div className="space-y-1">
+                                <label className="text-[10px] uppercase font-bold text-zinc-500 font-mono">Operator Name</label>
+                                <input 
+                                    type="text" 
+                                    value={userProfile.name}
+                                    onChange={(e) => handleProfileUpdate('name', e.target.value)}
+                                    className="w-full bg-black/40 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none font-mono"
+                                />
+                             </div>
+                             <div className="space-y-1">
+                                <label className="text-[10px] uppercase font-bold text-zinc-500 font-mono">Productive Hours</label>
+                                <select 
+                                    value={userProfile.productiveHours}
+                                    onChange={(e) => handleProfileUpdate('productiveHours', e.target.value)}
+                                    className="w-full bg-black/40 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none font-mono"
+                                >
+                                    <option value="morning">Morning (Early Bird)</option>
+                                    <option value="afternoon">Afternoon (Regular)</option>
+                                    <option value="night">Night (Night Owl)</option>
+                                </select>
+                             </div>
+                        </div>
+                    </section>
+
+                    {/* CHRONOTYPE SETTINGS */}
+                    <section className="space-y-4">
+                        <label className="text-xs font-bold text-primary uppercase tracking-wider font-mono flex items-center gap-2">
+                            <Clock className="w-4 h-4" /> Chronotype Calibration
+                        </label>
+                        <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-1">
+                                <label className="text-[10px] uppercase font-bold text-zinc-500 font-mono">Wake Cycle</label>
+                                <input 
+                                    type="time" 
+                                    value={userProfile.wakeUpTime}
+                                    onChange={(e) => handleProfileUpdate('wakeUpTime', e.target.value)}
+                                    className="w-full bg-black/40 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none font-mono"
+                                />
+                             </div>
+                             <div className="space-y-1">
+                                <label className="text-[10px] uppercase font-bold text-zinc-500 font-mono">Sleep Cycle</label>
+                                <input 
+                                    type="time" 
+                                    value={userProfile.sleepTime}
+                                    onChange={(e) => handleProfileUpdate('sleepTime', e.target.value)}
+                                    className="w-full bg-black/40 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none font-mono"
+                                />
+                             </div>
+                        </div>
+                        <p className="text-[10px] text-muted font-mono">*Used by AI to optimize your schedule generation.</p>
+                    </section>
+
+                    {/* THEMES */}
+                    <section className="space-y-4">
+                        <label className="text-xs font-bold text-primary uppercase tracking-wider font-mono flex items-center gap-2">
+                          <Palette className="w-4 h-4" />
+                          Visual Interface
+                        </label>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                          {THEMES.map((theme) => (
+                            <button
+                              key={theme.id}
+                              onClick={() => setUserProfile({...userProfile, theme: theme.id})}
+                              className={`
+                                 group relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all
+                                 ${userProfile.theme === theme.id 
+                                    ? 'border-primary bg-primary/10' 
+                                    : 'border-border bg-black/40 hover:border-border/80'
+                                 }
+                              `}
+                            >
+                               <div 
+                                  className="w-6 h-6 rounded-full shadow-lg"
+                                  style={{ backgroundColor: theme.color }}
+                               ></div>
+                               <span className={`text-[9px] font-bold uppercase font-mono ${userProfile.theme === theme.id ? 'text-primary' : 'text-muted'}`}>
+                                 {theme.label}
+                               </span>
+                               {userProfile.theme === theme.id && (
+                                 <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+                               )}
+                            </button>
+                          ))}
+                        </div>
+                    </section>
+
+                    {/* DATA IO */}
+                    <section className="space-y-4">
+                        <label className="text-xs font-bold text-primary uppercase tracking-wider font-mono flex items-center gap-2">
+                            <Database className="w-4 h-4" /> System Data IO
+                        </label>
+                        <div className="flex gap-4">
+                            <Button variant="secondary" onClick={handleExportData} className="flex-1 text-xs">
+                                <Download className="w-4 h-4 mr-2" /> Backup System
+                            </Button>
+                            <div className="flex-1 relative">
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef}
+                                    onChange={handleImportData}
+                                    accept=".json"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                />
+                                <Button variant="outline" className="w-full text-xs pointer-events-none">
+                                    <Upload className="w-4 h-4 mr-2" /> Restore Backup
+                                </Button>
+                            </div>
+                        </div>
+                    </section>
+
                 </div>
+
                  <div className="pt-6 border-t border-border flex justify-between items-center relative z-10">
                     <button 
                         onClick={() => { localStorage.clear(); window.location.reload(); }}
-                        className="text-xs text-red-500 hover:text-red-400 font-bold uppercase tracking-widest hover:underline"
+                        className="text-xs text-red-500 hover:text-red-400 font-bold uppercase tracking-widest hover:underline flex items-center gap-1"
                     >
-                        Factory Reset
+                        <Trash2 className="w-3 h-3" /> Factory Reset
                     </button>
-                    <span className="text-xs text-muted font-mono">AUTO-SAVE ENABLED</span>
+                    <div className="flex items-center gap-2 text-xs font-mono text-emerald-500">
+                        <Save className="w-3 h-3" /> AUTO-SAVE ENABLED
+                    </div>
                 </div>
             </div>
             )}
