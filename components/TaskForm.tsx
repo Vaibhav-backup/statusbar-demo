@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, ArrowRight, Wand2, BatteryLow, BatteryMedium, Zap, Signal, SignalMedium, SignalHigh, Save, X, Layers, Disc } from 'lucide-react';
 import { Task, Priority, EnergyLevel, TaskCategory } from '../types';
@@ -32,12 +31,12 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask }) => {
 
   // Macros / Templates State
   const [templates, setTemplates] = useState<TaskTemplate[]>(() => {
-    const saved = localStorage.getItem('statusbar_macros');
+    const saved = localStorage.getItem('lockin_macros');
     return saved ? JSON.parse(saved) : [];
   });
 
   useEffect(() => {
-    localStorage.setItem('statusbar_macros', JSON.stringify(templates));
+    localStorage.setItem('lockin_macros', JSON.stringify(templates));
   }, [templates]);
 
   const handleSubmit = (e: React.FormEvent) => {

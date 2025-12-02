@@ -64,7 +64,7 @@ export const generateSmartSchedule = async (
   if (tasks.length === 0) return [];
 
   const prompt = `
-    You are NEXUS, an advanced AI productivity scheduler with a Gen Z personality.
+    You are LOCK IN, an advanced AI productivity scheduler with a Gen Z personality.
     
     User Profile:
     - Wake up: ${profile.wakeUpTime}
@@ -183,7 +183,7 @@ export const generateScheduleInfographic = async (schedule: ScheduleItem[]): Pro
     - Gen Z Aesthetic: Neon accents, clean lines, maybe a bit cyberpunk or retro-futuristic.
     - Layout: Optimize for a 16:9 Landscape view. Use a horizontal timeline or a grid layout.
     - Font: Bold, legible, sans-serif.
-    - Title: "NEXUS DAILY LOG"
+    - Title: "LOCK IN DAILY LOG"
     
     Content to visualize:
     ${scheduleText}
@@ -264,5 +264,49 @@ export const summarizeYap = async (text: string): Promise<{summary: string, task
     return JSON.parse(response.text || '{"summary": "Just yapping.", "tasks": []}');
   } catch (e) {
     return { summary: "Couldn't read the yap.", tasks: [] };
+  }
+};
+
+export const importPlaylistFromUrl = async (url: string): Promise<{playlistTitle: string, videos: {title: string, number: number}[]}> => {
+  const prompt = `
+    I need to extract video titles from a YouTube playlist.
+    URL: ${url}
+    
+    Using Google Search, find the playlist title and the list of video titles contained in it.
+    
+    Return the result as a valid JSON object with the following structure:
+    {
+      "playlistTitle": "The Playlist Title",
+      "videos": [
+        { "title": "First Video Title", "number": 1 },
+        { "title": "Second Video Title", "number": 2 }
+      ]
+    }
+    
+    Do not include any markdown formatting, just the raw JSON string.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+      },
+    });
+
+    let text = response.text || "{}";
+    
+    // Attempt to clean markdown if the model ignores the instruction
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+        text = jsonMatch[0];
+    }
+    
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Error importing playlist:", error);
+    // Return a fallback structure instead of throwing, or throw nicely
+    throw new Error("Failed to extract playlist data. Ensure it's a valid public URL.");
   }
 };

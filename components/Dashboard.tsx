@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Task, ScheduleItem, UserProfile, ToastMessage, PomodoroSettings, Theme, TaskCategory } from '../types';
 import { generateSmartSchedule, getMotivationalNudge, generateScheduleInfographic, roastSchedule } from '../services/geminiService';
@@ -41,14 +40,11 @@ import {
   Skull,
   User,
   Clock,
-  Database,
-  Upload,
-  Save,
-  Volume2
+  Save
 } from 'lucide-react';
 
 interface DashboardProps {
-  user: { name: string; email: string };
+  user: { name: string; email: string; id: string };
   onLogout: () => void;
   onThemeChange?: (theme: Theme) => void;
 }
@@ -112,23 +108,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
   const [activeTab, setActiveTab] = useState<'dashboard' | 'analytics' | 'history' | 'settings'>('dashboard');
   
   // Data State
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    const saved = localStorage.getItem('statusbar_tasks');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [schedule, setSchedule] = useState<ScheduleItem[]>(() => {
-    const saved = localStorage.getItem('statusbar_schedule');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
-    const saved = localStorage.getItem('statusbar_profile');
-    const parsed = saved ? JSON.parse(saved) : { ...DEFAULT_PROFILE, name: user.name };
-    if (!parsed.pomodoroSettings) parsed.pomodoroSettings = DEFAULT_POMODORO;
-    if (!parsed.theme) parsed.theme = 'cyber';
-    if (parsed.streak === undefined) parsed.streak = 0;
-    return parsed;
-  });
-  const [yapText, setYapText] = useState(() => localStorage.getItem('statusbar_yap') || '');
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [yapText, setYapText] = useState('');
 
   // Feature States
   const [rotMode, setRotMode] = useState(false);
@@ -145,7 +128,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showInfographicModal, setShowInfographicModal] = useState(false);
   const [showPomodoro, setShowPomodoro] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Infographic
   const [infographicUrl, setInfographicUrl] = useState<string | null>(null);
@@ -157,14 +139,44 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
   // Particle Effects
   const [explosion, setExplosion] = useState<{x: number, y: number, id: number} | null>(null);
 
-  // Persistence Effects
-  useEffect(() => { localStorage.setItem('statusbar_tasks', JSON.stringify(tasks)); }, [tasks]);
-  useEffect(() => { localStorage.setItem('statusbar_schedule', JSON.stringify(schedule)); }, [schedule]);
-  useEffect(() => { 
-      localStorage.setItem('statusbar_profile', JSON.stringify(userProfile)); 
-      if (onThemeChange) onThemeChange(userProfile.theme);
-  }, [userProfile, onThemeChange]);
-  useEffect(() => { localStorage.setItem('statusbar_yap', yapText); }, [yapText]);
+  // --- LOCAL PERSISTENCE HELPERS ---
+  const saveTasks = (newTasks: Task[]) => {
+      setTasks(newTasks);
+      localStorage.setItem('lockin_tasks', JSON.stringify(newTasks));
+  };
+  
+  const saveSchedule = (newSchedule: ScheduleItem[]) => {
+      setSchedule(newSchedule);
+      localStorage.setItem('lockin_schedule', JSON.stringify(newSchedule));
+  };
+
+  const saveProfile = (newProfile: UserProfile) => {
+      setUserProfile(newProfile);
+      localStorage.setItem('lockin_profile', JSON.stringify(newProfile));
+      if (newProfile.theme && onThemeChange) onThemeChange(newProfile.theme);
+  };
+
+  // --- INITIAL LOAD ---
+  useEffect(() => {
+    // 1. Profile
+    const storedProfile = localStorage.getItem('lockin_profile');
+    if (storedProfile) {
+        const parsed = JSON.parse(storedProfile);
+        setUserProfile({ ...DEFAULT_PROFILE, ...parsed });
+        if (parsed.theme && onThemeChange) onThemeChange(parsed.theme);
+    } else {
+        const initialProfile = { ...DEFAULT_PROFILE, name: user.name || 'User' };
+        saveProfile(initialProfile);
+    }
+
+    // 2. Tasks
+    const storedTasks = localStorage.getItem('lockin_tasks');
+    if (storedTasks) setTasks(JSON.parse(storedTasks));
+
+    // 3. Schedule
+    const storedSchedule = localStorage.getItem('lockin_schedule');
+    if (storedSchedule) setSchedule(JSON.parse(storedSchedule));
+  }, []);
 
   // Rot Mode Effect
   useEffect(() => {
@@ -174,28 +186,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
       document.body.classList.remove('rot-mode');
     }
   }, [rotMode]);
-
-  // Streak Logic
-  useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    if (userProfile.lastLoginDate !== today) {
-        const lastLogin = new Date(userProfile.lastLoginDate);
-        const diff = Math.floor((new Date().getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24));
-        
-        let newStreak = userProfile.streak;
-        if (diff === 1) {
-            newStreak += 1; // Consecutive day
-        } else if (diff > 1) {
-            newStreak = 0; // Streak broken
-        }
-
-        setUserProfile(prev => ({
-            ...prev,
-            lastLoginDate: today,
-            streak: newStreak
-        }));
-    }
-  }, []);
 
   const addToast = (message: string, type: 'success' | 'error' | 'info', onUndo?: () => void) => {
     const id = Date.now().toString();
@@ -210,18 +200,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
   const getLevel = (xp: number) => Math.floor(xp / 1000) + 1;
   const getProgress = (xp: number) => (xp % 1000) / 10; 
 
-  const handleAddTask = (newTask: Omit<Task, 'id' | 'completed'>) => {
+  const handleAddTask = async (newTaskInput: Omit<Task, 'id' | 'completed'>) => {
+    const tempId = Math.random().toString(36).substr(2, 9);
     const task: Task = {
-      ...newTask,
-      id: Math.random().toString(36).substr(2, 9),
+      ...newTaskInput,
+      id: tempId,
       completed: false,
       timeSpent: 0
     };
-    setTasks(prev => [...prev, task]);
+    
+    const newTasks = [...tasks, task];
+    saveTasks(newTasks);
     addToast("NEW QUEST ACQUIRED", "info");
   };
 
-  // New: Handle Tasks from YapPad
+  // Handle Tasks from YapPad
   const handleAddYapTasks = (newTasks: any[]) => {
       newTasks.forEach(t => {
           handleAddTask({
@@ -242,31 +235,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
     }
   };
 
-  const handleSaveTask = (updatedTask: Task) => {
-    setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
-    setSchedule(prev => prev.map(item => item.taskId === updatedTask.id ? { ...item, title: updatedTask.title, category: updatedTask.category } : item));
+  const handleSaveTask = async (updatedTask: Task) => {
+    const newTasks = tasks.map(t => t.id === updatedTask.id ? updatedTask : t);
+    saveTasks(newTasks);
+    
+    // Update schedule if title changes
+    const newSchedule = schedule.map(item => item.taskId === updatedTask.id ? { ...item, title: updatedTask.title, category: updatedTask.category } : item);
+    saveSchedule(newSchedule);
+
     setEditingTask(null);
     addToast("QUEST DATA UPDATED", "success");
   };
 
-  const handleDeleteTask = (taskId: string) => {
+  const handleDeleteTask = async (taskId: string) => {
     const taskToDelete = tasks.find(t => t.id === taskId);
     if (!taskToDelete) return;
 
-    setTasks(prev => prev.filter(t => t.id !== taskId));
-    setSchedule(prev => prev.filter(item => item.taskId !== taskId));
+    const newTasks = tasks.filter(t => t.id !== taskId);
+    saveTasks(newTasks);
 
-    addToast("QUEST ABANDONED", "info", () => {
-      setTasks(prev => [...prev, taskToDelete]);
-      addToast("QUEST RESTORED", "success");
-    });
+    const newSchedule = schedule.filter(item => item.taskId !== taskId);
+    saveSchedule(newSchedule);
+
+    addToast("QUEST ABANDONED", "info");
   };
 
-  const handleClearCompleted = () => {
+  const handleClearCompleted = async () => {
     const completed = tasks.filter(t => t.completed);
     if (completed.length === 0) return;
     
-    setTasks(prev => prev.filter(t => !t.completed));
+    // For local storage, if we want to delete:
+    const newTasks = tasks.filter(t => !t.completed);
+    saveTasks(newTasks);
+
     addToast(`PURGED ${completed.length} RECORDS`, "info");
   };
 
@@ -278,13 +279,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
     }
     
     setIsGenerating(true);
-    setSchedule([]); 
     setInfographicUrl(null); 
+    
     try {
       const context = scheduleContext.trim() || "Standard productivity flow";
       const newSchedule = await generateSmartSchedule(activeTasks, userProfile, context);
-      setSchedule(newSchedule);
+      
+      saveSchedule(newSchedule);
       setNudge(await getMotivationalNudge(tasks.filter(t=>t.completed).length, tasks.length));
+
     } catch (error) {
       console.error(error);
       addToast("SIMULATION FAILED", "error");
@@ -320,28 +323,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
 
   const handleReOptimize = async () => {
     if(schedule.length === 0) return;
-    setIsGenerating(true);
-    try {
-      const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const context = `${scheduleContext}. Current time: ${currentTime}. Re-optimize.`;
-      const newSchedule = await generateSmartSchedule(tasks.filter(t => !t.completed), userProfile, context);
-      setSchedule(newSchedule);
-      setNudge("RE-ROUTING POWER...");
-    } catch (e) {
-      addToast("OPTIMIZATION ERROR", "error");
-    } finally {
-      setIsGenerating(false);
-    }
+    await handleGenerateSchedule();
   };
 
   const handleReorderSchedule = (fromIndex: number, toIndex: number) => {
     const newSchedule = [...schedule];
     const [movedItem] = newSchedule.splice(fromIndex, 1);
     newSchedule.splice(toIndex, 0, movedItem);
-    setSchedule(newSchedule);
+    saveSchedule(newSchedule);
   };
 
-  const handleToggleTask = (taskId: string, e?: React.MouseEvent) => {
+  const handleToggleTask = async (taskId: string, e?: React.MouseEvent) => {
     if (e) {
         setExplosion({ x: e.clientX, y: e.clientY, id: Date.now() });
         setTimeout(() => setExplosion(null), 1000);
@@ -349,10 +341,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
 
     let earnedXp = 0;
     const now = new Date().toISOString();
+    let isNowCompleted = false;
 
-    setTasks(prev => prev.map(t => {
+    const newTasks = tasks.map(t => {
       if (t.id === taskId) {
-        const isNowCompleted = !t.completed;
+        isNowCompleted = !t.completed;
         if (isNowCompleted) earnedXp = 100; 
         else earnedXp = -100;
         return { 
@@ -362,10 +355,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
         };
       }
       return t;
-    }));
+    });
+    saveTasks(newTasks);
 
-    setUserProfile(prev => ({ ...prev, aura: Math.max(0, prev.aura + earnedXp) }));
-    
+    const newAura = Math.max(0, userProfile.aura + earnedXp);
+    saveProfile({ ...userProfile, aura: newAura });
+
     if (earnedXp > 0) {
         const nudges = ["+100 AURA", "COMBO BREAK!", "QUEST COMPLETE", "XP GAINED"];
         addToast(nudges[Math.floor(Math.random() * nudges.length)], "success");
@@ -376,13 +371,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
       setFocusTask(item);
   };
 
-  const updateTaskTimeSpent = (taskId: string, minutes: number) => {
-      setTasks(prev => prev.map(t => {
+  const updateTaskTimeSpent = async (taskId: string, minutes: number) => {
+      const newTasks = tasks.map(t => {
           if (t.id === taskId) {
               return { ...t, timeSpent: (t.timeSpent || 0) + minutes };
           }
           return t;
-      }));
+      });
+      saveTasks(newTasks);
   };
 
   const handleFocusModeComplete = (minutesSpent: number) => {
@@ -417,7 +413,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
 
   const handleExportICS = () => {
     if (schedule.length === 0) return;
-    let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//NEXUS//AI Schedule//EN\n";
+    let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//LOCK IN//AI Schedule//EN\n";
     const now = new Date();
     const pad = (n: number) => n < 10 ? '0' + n : n;
     const formatLocal = (date: Date) => `${date.getFullYear()}${pad(date.getMonth()+1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
@@ -431,7 +427,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
             const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM);
             if (endDate < startDate) endDate.setDate(endDate.getDate() + 1);
             icsContent += "BEGIN:VEVENT\n";
-            icsContent += `UID:${item.id}@nexus.ai\n`;
+            icsContent += `UID:${item.id}@lockin.ai\n`;
             icsContent += `DTSTAMP:${formatLocal(new Date())}\n`;
             icsContent += `DTSTART:${formatLocal(startDate)}\n`;
             icsContent += `DTEND:${formatLocal(endDate)}\n`;
@@ -444,48 +440,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
     const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
-    link.setAttribute('download', `nexus-mission-${now.toISOString().split('T')[0]}.ics`);
+    link.setAttribute('download', `lockin-mission-${now.toISOString().split('T')[0]}.ics`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-  const handleExportData = () => {
-    const data = {
-        profile: userProfile,
-        tasks,
-        schedule,
-        exportedAt: new Date().toISOString()
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.setAttribute('download', `nexus-backup-${new Date().toISOString().split('T')[0]}.json`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    addToast("SYSTEM BACKUP COMPLETE", "success");
-  };
-
-  const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        try {
-            const data = JSON.parse(event.target?.result as string);
-            if (data.profile) setUserProfile(data.profile);
-            if (data.tasks) setTasks(data.tasks);
-            if (data.schedule) setSchedule(data.schedule);
-            addToast("SYSTEM RESTORED", "success");
-        } catch (error) {
-            addToast("CORRUPT DATA FILE", "error");
-        }
-    };
-    reader.readAsText(file);
-    // Reset input
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const getGreeting = () => {
@@ -496,11 +454,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
     return "NIGHT OPS";
   };
 
-  const updatePomodoroSettings = (newSettings: PomodoroSettings) => {
-    setUserProfile(prev => ({
-        ...prev,
-        pomodoroSettings: newSettings
-    }));
+  const updatePomodoroSettings = async (newSettings: PomodoroSettings) => {
+    saveProfile({ ...userProfile, pomodoroSettings: newSettings });
   };
 
   const handleVibeSelect = (vibe: string, context: string) => {
@@ -512,7 +467,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
   };
 
   const handleMoodSelect = (mood: string) => {
-    const timestamp = new Date().toLocaleTimeString();
     setScheduleContext(prev => {
         const cleanPrev = prev.replace(/\[Mood:.*?\]/g, '').trim();
         return `${cleanPrev} [Mood: ${mood}]`.trim();
@@ -523,9 +477,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
     }
   };
 
-  const handleProfileUpdate = (key: keyof UserProfile, value: any) => {
-      setUserProfile(prev => ({ ...prev, [key]: value }));
+  const handleProfileUpdate = async (key: keyof UserProfile, value: any) => {
+      saveProfile({ ...userProfile, [key]: value });
   };
+
+  const displayName = userProfile.name || "User";
 
   return (
     <div className="min-h-screen flex bg-background text-foreground font-sans selection:bg-primary selection:text-primary-fg overflow-hidden transition-colors duration-500">
@@ -539,7 +495,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
               <Gamepad2 className="text-primary-fg w-6 h-6" />
             </div>
             <div>
-                 <span className="text-2xl font-bold tracking-tighter text-foreground font-mono">NEXUS</span>
+                 <span className="text-2xl font-bold tracking-tighter text-foreground font-mono">LOCK IN</span>
                  <div className="h-0.5 w-full bg-gradient-to-r from-primary to-transparent"></div>
             </div>
           </div>
@@ -630,11 +586,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
            <div className="flex items-center justify-between">
              <div className="flex items-center gap-3">
                <div className="w-8 h-8 rounded bg-surface-highlight flex items-center justify-center text-xs font-bold text-foreground border border-border shadow-lg">
-                 {user.name.charAt(0)}
+                 {displayName.charAt(0)}
                </div>
                <div className="overflow-hidden">
-                 <p className="text-xs font-bold text-foreground uppercase tracking-wider truncate w-24 font-mono">{user.name}</p>
-                 <p className="text-[9px] text-primary">ONLINE</p>
+                 <p className="text-xs font-bold text-foreground uppercase tracking-wider truncate w-24 font-mono">{displayName}</p>
+                 <p className="text-[9px] text-primary">LOCAL</p>
                </div>
              </div>
              <button onClick={onLogout} className="text-muted hover:text-red-500 transition-colors">
@@ -654,7 +610,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
                 <div className="w-8 h-8 bg-primary rounded flex items-center justify-center shadow-lg">
                    <Gamepad2 className="text-primary-fg w-5 h-5" />
                 </div>
-                <span className="font-bold text-foreground font-mono tracking-tighter text-lg">NEXUS</span>
+                <span className="font-bold text-foreground font-mono tracking-tighter text-lg">LOCK IN</span>
             </div>
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-muted p-2 hover:bg-surface rounded-lg transition-colors">
                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -903,6 +859,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
                                 onDelete={handleDeleteTask}
                                 onReorder={handleReorderSchedule}
                                 onFocus={handleFocusTask}
+                                onToggleComplete={handleToggleTask}
                                 completedTaskIds={new Set(tasks.filter(t => t.completed).map(t => t.id))}
                             />
                         </div>
@@ -929,7 +886,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
                 
                 <div>
                     <h2 className="text-2xl font-bold text-foreground mb-1 font-mono uppercase">System Configuration</h2>
-                    <p className="text-sm text-muted">Customize your NEXUS environment parameters.</p>
+                    <p className="text-sm text-muted">Customize your LOCK IN environment parameters.</p>
                 </div>
 
                 <div className="space-y-8 relative z-10">
@@ -1002,7 +959,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
                           {THEMES.map((theme) => (
                             <button
                               key={theme.id}
-                              onClick={() => setUserProfile({...userProfile, theme: theme.id})}
+                              onClick={() => handleProfileUpdate('theme', theme.id)}
                               className={`
                                  group relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all
                                  ${userProfile.theme === theme.id 
@@ -1026,41 +983,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
                         </div>
                     </section>
 
-                    {/* DATA IO */}
-                    <section className="space-y-4">
-                        <label className="text-xs font-bold text-primary uppercase tracking-wider font-mono flex items-center gap-2">
-                            <Database className="w-4 h-4" /> System Data IO
-                        </label>
-                        <div className="flex gap-4">
-                            <Button variant="secondary" onClick={handleExportData} className="flex-1 text-xs">
-                                <Download className="w-4 h-4 mr-2" /> Backup System
-                            </Button>
-                            <div className="flex-1 relative">
-                                <input 
-                                    type="file" 
-                                    ref={fileInputRef}
-                                    onChange={handleImportData}
-                                    accept=".json"
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                />
-                                <Button variant="outline" className="w-full text-xs pointer-events-none">
-                                    <Upload className="w-4 h-4 mr-2" /> Restore Backup
-                                </Button>
-                            </div>
-                        </div>
-                    </section>
-
                 </div>
 
                  <div className="pt-6 border-t border-border flex justify-between items-center relative z-10">
-                    <button 
-                        onClick={() => { localStorage.clear(); window.location.reload(); }}
-                        className="text-xs text-red-500 hover:text-red-400 font-bold uppercase tracking-widest hover:underline flex items-center gap-1"
-                    >
-                        <Trash2 className="w-3 h-3" /> Factory Reset
-                    </button>
                     <div className="flex items-center gap-2 text-xs font-mono text-emerald-500">
-                        <Save className="w-3 h-3" /> AUTO-SAVE ENABLED
+                        <Save className="w-3 h-3" /> LOCAL STORAGE ENABLED
                     </div>
                 </div>
             </div>
@@ -1128,7 +1055,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onThemeCha
                   <div className="p-6 border-t border-border bg-surface/50 flex justify-end gap-3">
                       <a 
                         href={infographicUrl} 
-                        download={`nexus-mission-map-${new Date().toISOString().split('T')[0]}.png`}
+                        download={`lockin-mission-map-${new Date().toISOString().split('T')[0]}.png`}
                         className="inline-flex items-center gap-2 px-8 py-3 bg-primary text-primary-fg hover:bg-primary/90 rounded-lg font-bold text-sm transition-all shadow-lg shadow-primary/20 font-mono uppercase tracking-widest"
                       >
                           <Download className="w-4 h-4" />

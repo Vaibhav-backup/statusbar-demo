@@ -1,42 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { LandingPage } from './components/LandingPage';
 import { LoginPage } from './components/LoginPage';
 
 type ViewState = 'landing' | 'login' | 'app';
 
-interface UserState {
-  name: string;
-  email: string;
-}
-
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewState>('landing');
-  const [user, setUser] = useState<UserState | null>(null);
+  const [user, setUser] = useState<any | null>(null);
   const [apiKeyError, setApiKeyError] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<string>('cyber');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-     if(!process.env.API_KEY) {
+     // Check for Gemini API Key
+     if (!process.env.API_KEY) {
         setApiKeyError(true);
      }
      
-     // Check for persisted session
-     const savedUser = localStorage.getItem('statusbar_user');
-     if (savedUser) {
-         setUser(JSON.parse(savedUser));
-         setCurrentView('app');
+     // Check Local Storage for User
+     const storedUser = localStorage.getItem('lockin_user');
+     if (storedUser) {
+       setUser(JSON.parse(storedUser));
+       setCurrentView('app');
      }
-
-     // Load saved theme
-     const savedProfile = localStorage.getItem('statusbar_profile');
-     if (savedProfile) {
-       const profile = JSON.parse(savedProfile);
-       if (profile.theme) {
-         setCurrentTheme(profile.theme);
-       }
-     }
+     setIsLoading(false);
   }, []);
 
   // Apply theme class to body
@@ -44,16 +33,15 @@ export default function App() {
     document.body.className = `theme-${currentTheme}`;
   }, [currentTheme]);
 
-  const handleLogin = (name: string, email: string) => {
-      const newUser = { name, email };
-      setUser(newUser);
-      localStorage.setItem('statusbar_user', JSON.stringify(newUser));
+  const handleLogin = (userData: any) => {
+      localStorage.setItem('lockin_user', JSON.stringify(userData));
+      setUser(userData);
       setCurrentView('app');
   };
 
   const handleLogout = () => {
+      localStorage.removeItem('lockin_user');
       setUser(null);
-      localStorage.removeItem('statusbar_user');
       setCurrentView('landing');
   };
 
@@ -67,11 +55,19 @@ export default function App() {
               <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
               <h1 className="text-2xl font-bold mb-2">API Key Missing</h1>
               <p className="text-muted max-w-md">
-                  NEXUS requires a Google Gemini API Key to function. 
-                  Please restart the environment with a valid API key.
+                  LOCK IN requires a Google Gemini API Key to function. 
+                  Please check your environment variables.
               </p>
           </div>
       )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="h-screen w-full bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    );
   }
 
   // Router logic

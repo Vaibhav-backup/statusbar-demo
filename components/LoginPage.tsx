@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Button } from './Button';
-import { Zap, ArrowRight } from 'lucide-react';
+import { Zap, ArrowRight, AlertCircle } from 'lucide-react';
 
 interface LoginPageProps {
-  onLogin: (name: string, email: string) => void;
+  onLogin: (user: any) => void;
   onBack: () => void;
 }
 
@@ -13,18 +13,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
   const [name, setName] = useState('');
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || (!isLoginMode && !name)) return;
 
     setIsLoading(true);
-    // Simulate network request
+    setError(null);
+
+    // Simulate Network Request
     setTimeout(() => {
-        const finalName = name || email.split('@')[0];
-        onLogin(finalName, email);
         setIsLoading(false);
-    }, 1500);
+        // Mock User Data
+        const userData = {
+            id: 'local-user-' + Date.now(),
+            email: email,
+            name: name || email.split('@')[0],
+        };
+        onLogin(userData);
+    }, 800);
   };
 
   return (
@@ -41,6 +49,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
                 {isLoginMode ? 'Enter your credentials to access.' : 'Start your productivity journey.'}
             </p>
         </div>
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg mb-4 text-sm flex items-center gap-2">
+            <AlertCircle className="w-4 h-4" />
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
             {!isLoginMode && (
@@ -84,7 +99,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
 
         <div className="mt-8 text-center space-y-4">
             <button 
-                onClick={() => setIsLoginMode(!isLoginMode)}
+                onClick={() => { setIsLoginMode(!isLoginMode); setError(null); }}
                 className="block w-full text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
             >
                 {isLoginMode ? "No account? Create one." : "Have an account? Sign in."}

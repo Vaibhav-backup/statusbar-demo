@@ -10,6 +10,7 @@ interface TimelineProps {
   onDelete?: (taskId: string) => void;
   onReorder?: (fromIndex: number, toIndex: number) => void;
   onFocus?: (scheduleItem: ScheduleItem) => void;
+  onToggleComplete?: (taskId: string) => void;
   completedTaskIds?: Set<string>;
 }
 
@@ -33,9 +34,10 @@ const Placeholder = () => (
   </div>
 );
 
-export const Timeline: React.FC<TimelineProps> = ({ schedule, isLoading, onEdit, onDelete, onReorder, onFocus, completedTaskIds = new Set() }) => {
+export const Timeline: React.FC<TimelineProps> = ({ schedule, isLoading, onEdit, onDelete, onReorder, onFocus, onToggleComplete, completedTaskIds = new Set() }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [confirmTaskId, setConfirmTaskId] = useState<string | null>(null);
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIndex(index);
@@ -60,6 +62,13 @@ export const Timeline: React.FC<TimelineProps> = ({ schedule, isLoading, onEdit,
     }
     setDraggedIndex(null);
     setDragOverIndex(null);
+  };
+
+  const handleConfirmComplete = () => {
+    if (confirmTaskId && onToggleComplete) {
+      onToggleComplete(confirmTaskId);
+    }
+    setConfirmTaskId(null);
   };
 
   if (isLoading) {
@@ -191,6 +200,17 @@ export const Timeline: React.FC<TimelineProps> = ({ schedule, isLoading, onEdit,
                           <Play className="w-3.5 h-3.5 fill-current" />
                         </button>
                       )}
+                      
+                      {onToggleComplete && !isCompleted && (
+                        <button 
+                          onClick={() => setConfirmTaskId(item.taskId)}
+                          className="p-1.5 text-muted hover:text-emerald-400 hover:bg-emerald-500/10 rounded-md transition-colors bg-surface border border-border md:bg-transparent md:border-none"
+                          title="Complete Task"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
                       {onEdit && (
                         <button 
                           onClick={() => onEdit(item.taskId)}
@@ -218,6 +238,30 @@ export const Timeline: React.FC<TimelineProps> = ({ schedule, isLoading, onEdit,
           </React.Fragment>
         );
       })}
+
+      {/* Confirmation Modal */}
+      {confirmTaskId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+           <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 shadow-2xl max-w-sm w-full animate-in zoom-in-95 duration-200">
+               <h3 className="text-lg font-bold text-foreground mb-2 font-mono uppercase tracking-tight">Confirm Completion</h3>
+               <p className="text-zinc-400 mb-6 font-mono text-sm">Are you sure you want to complete this task?</p>
+               <div className="flex gap-3 justify-end">
+                   <button 
+                      onClick={() => setConfirmTaskId(null)}
+                      className="px-4 py-2 rounded-lg text-xs font-bold font-mono text-zinc-400 hover:text-foreground hover:bg-zinc-800 transition-colors"
+                   >
+                       CANCEL
+                   </button>
+                   <button 
+                      onClick={handleConfirmComplete}
+                      className="px-4 py-2 rounded-lg text-xs font-bold font-mono bg-emerald-500 text-black hover:bg-emerald-400 transition-colors"
+                   >
+                       CONFIRM
+                   </button>
+               </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };

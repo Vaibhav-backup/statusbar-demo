@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { Task, TaskCategory } from '../types';
-import { Calendar, Filter, ArrowUpDown, Search, Archive, Eye } from 'lucide-react';
+import { Task, TaskCategory, Priority, EnergyLevel } from '../types';
+import { Calendar, Filter, ArrowUpDown, Search, Archive, Eye, Zap, Signal } from 'lucide-react';
 import { MissionReportModal } from './MissionReportModal';
 
 interface TaskHistoryProps {
@@ -15,6 +15,8 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({ tasks }) => {
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [filterCategory, setFilterCategory] = useState<string>('All');
+  const [filterPriority, setFilterPriority] = useState<string>('All');
+  const [filterEnergy, setFilterEnergy] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
@@ -22,8 +24,10 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({ tasks }) => {
 
   const filteredTasks = completedTasks.filter(task => {
     const matchesCategory = filterCategory === 'All' || task.category === filterCategory;
+    const matchesPriority = filterPriority === 'All' || task.priority === filterPriority;
+    const matchesEnergy = filterEnergy === 'All' || task.energyRequired === filterEnergy;
     const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return matchesCategory && matchesPriority && matchesEnergy && matchesSearch;
   });
 
   const sortedTasks = [...filteredTasks].sort((a, b) => {
@@ -77,14 +81,32 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({ tasks }) => {
              />
         </div>
 
-        <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+        <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 custom-scrollbar">
             <select 
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
-                className="bg-black/40 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none font-mono"
+                className="bg-black/40 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none font-mono min-w-[120px]"
             >
                 <option value="All">All Categories</option>
                 {Object.values(TaskCategory).map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+
+            <select 
+                value={filterPriority}
+                onChange={(e) => setFilterPriority(e.target.value)}
+                className="bg-black/40 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none font-mono min-w-[100px]"
+            >
+                <option value="All">All Priorities</option>
+                {Object.values(Priority).map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+
+            <select 
+                value={filterEnergy}
+                onChange={(e) => setFilterEnergy(e.target.value)}
+                className="bg-black/40 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none font-mono min-w-[100px]"
+            >
+                <option value="All">All Energy</option>
+                {Object.values(EnergyLevel).map(e => <option key={e} value={e}>{e}</option>)}
             </select>
 
             <button 
@@ -119,10 +141,18 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({ tasks }) => {
                       </div>
                       <div className="min-w-0">
                           <h4 className="font-bold text-foreground font-mono truncate group-hover:text-primary transition-colors">{task.title}</h4>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-muted font-mono">
+                          <div className="flex items-center gap-3 mt-1 text-xs text-muted font-mono flex-wrap">
                               <span>{new Date(task.completedAt!).toLocaleDateString()}</span>
                               <span className="w-1 h-1 rounded-full bg-zinc-700"></span>
                               <span className="text-foreground">{task.category}</span>
+                              <span className="w-1 h-1 rounded-full bg-zinc-700"></span>
+                              <span className="flex items-center gap-1">
+                                <Signal className="w-3 h-3" /> {task.priority}
+                              </span>
+                              <span className="w-1 h-1 rounded-full bg-zinc-700"></span>
+                              <span className="flex items-center gap-1">
+                                <Zap className="w-3 h-3" /> {task.energyRequired}
+                              </span>
                               <span className="w-1 h-1 rounded-full bg-zinc-700"></span>
                               <span>{task.durationMinutes}m</span>
                           </div>
@@ -134,6 +164,11 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({ tasks }) => {
                   </button>
               </div>
           ))}
+          {sortedTasks.length === 0 && (
+             <div className="text-center py-12 text-muted font-mono">
+                No missions match current filters.
+             </div>
+          )}
       </div>
 
       {selectedTask && (
